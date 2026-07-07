@@ -1,0 +1,99 @@
+import { doc, runTransaction, updateDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { db } from './firebase.js';
+import { generateInviteCode } from './inviteCode.js';
+
+const MAX_PLAYERS = 8;
+
+// Room create/join/leave/start/end involve no hidden information, so they run
+// as plain client-side Firestore transactions here rather than Cloud
+// Functions — see the plan's Phase 0 simplification. Phase 1's startGame
+// (dealing hands) and playCard (resolving hidden state) genuinely need
+// server-authoritative Cloud Functions and will replace startGame() below.
+
+export async function createRoom({ gameType = 'love-letter', hostUid, hostDisplayName, playerCount, ruleset, autoSkip }) {
+  const roomRef = doc(collection(db, 'gameRooms'));
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateInviteCode();
+    const codeRef = doc(db, 'roomCodes', code);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const codeSnap = await tx.get(codeRef);
+        if (codeSnap.exists()) throw new Error('CODE_TAKEN');
+
+        tx.set(codeRef, { roomId: roomRef.id });
+        tx.set(roomRef, {
+          gameType,
+          code,
+          hostUid,
+          status: 'waiting',
+          playerUids: [hostUid],
+          players: [{ uid: hostUid, displayName: hostDisplayName, seat: 0 }],
+          settings: { playerCount, ruleset, autoSkipEnabled: autoSkip, autoSkipMinutes: 10 },
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      return { roomId: roomRef.id, code };
+    } catch (err) {
+      if (err.message === 'CODE_TAKEN' && attempt < 4) continue;
+      throw err;
+    }
+  }
+
+  throw new Error('Could not generate a unique invite code — please try again.');
+}
+
+export async function joinRoomByCode({ code, uid, displayName }) {
+  const normalizedCode = code.trim().toUpperCase();
+  const codeRef = doc(db, 'roomCodes', normalizedCode);
+
+  return runTransaction(db, async (tx) => {
+    const codeSnap = await tx.get(codeRef);
+    if (!codeSnap.exists()) throw new Error('ROOM_NOT_FOUND');
+
+    const roomRef = doc(db, 'gameRooms', codeSnap.data().roomId);
+    const roomSnap = await tx.get(roomRef);
+    if (!roomSnap.exists()) throw new Error('ROOM_NOT_FOUND');
+
+    const room = roomSnap.data();
+    if (room.status !== 'waiting') throw new Error('ROOM_NOT_JOINABLE');
+    if (room.playerUids.includes(uid)) return { roomId: roomRef.id };
+    if (room.playerUids.length >= MAX_PLAYERS) throw new Error('ROOM_FULL');
+
+    const seat = room.players.length;
+    tx.update(roomRef, {
+      playerUids: [...room.playerUids, uid],
+      players: [...room.players, { uid, displayName, seat }],
+      updatedAt: serverTimestamp(),
+    });
+
+    return { roomId: roomRef.id };
+  });
+}
+
+export async function leaveRoom({ roomId, uid }) {
+  const roomRef = doc(db, 'gameRooms', roomId);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(roomRef);
+    if (!snap.exists()) return;
+    const room = snap.data();
+    tx.update(roomRef, {
+      playerUids: room.playerUids.filter((id) => id !== uid),
+      players: room.players.filter((p) => p.uid !== uid),
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function startGame({ roomId }) {
+  // Placeholder — flips status so the table screen is reachable end-to-end
+  // today. Real dealing/hidden-hand logic lands as a Cloud Function in Phase 1.
+  return updateDoc(doc(db, 'gameRooms', roomId), { status: 'active', updatedAt: serverTimestamp() });
+}
+
+export async function endGameEarly({ roomId }) {
+  return updateDoc(doc(db, 'gameRooms', roomId), { status: 'completed', updatedAt: serverTimestamp() });
+}

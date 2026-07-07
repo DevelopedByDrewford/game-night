@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E8DABF;font-family:'Work Sans',sans-serif;color:#2E2013;}
+*{box-sizing:border-box;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#E8DABF;background-image:radial-gradient(rgba(46,32,19,0.05) 1px, transparent 1px);background-size:16px 16px;position:relative;">
+
+  <!-- ============ GROOVY SWOOSH BACKGROUND (behind all content below nav) ============ -->
+  <div style="position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:0.32;">
+    <!-- diagonal pipe -->
+    <div style="position:absolute;top:-70px;left:12%;width:1500px;height:44px;transform:rotate(20deg);transform-origin:top left;display:flex;flex-direction:column;gap:5px;">
+      <div style="height:12px;border-radius:6px;background:#7C8C4A;"></div>
+      <div style="height:12px;border-radius:6px;background:#C8592F;"></div>
+      <div style="height:12px;border-radius:6px;background:#E3A73E;"></div>
+    </div>
+    <!-- arch / elbow, concentric rounded rings with gaps -->
+    <div style="position:absolute;left:4%;bottom:48%;width:130px;height:130px;border:12px solid #7C8C4A;border-bottom:none;border-radius:88px 88px 0 0;box-sizing:border-box;"></div>
+    <div style="position:absolute;left:calc(4% + 16px);bottom:48%;width:98px;height:114px;border:12px solid #C8592F;border-bottom:none;border-radius:66px 66px 0 0;box-sizing:border-box;"></div>
+    <div style="position:absolute;left:calc(4% + 32px);bottom:48%;width:66px;height:98px;border:12px solid #E3A73E;border-bottom:none;border-radius:44px 44px 0 0;box-sizing:border-box;"></div>
+    <!-- horizontal pipe continuing from the arch's right leg -->
+    <div style="position:absolute;left:calc(4% + 98px);bottom:48%;right:-10%;display:flex;flex-direction:column;gap:5px;">
+      <div style="height:12px;border-radius:6px;background:#7C8C4A;"></div>
+      <div style="height:12px;border-radius:6px;background:#C8592F;"></div>
+      <div style="height:12px;border-radius:6px;background:#E3A73E;"></div>
+    </div>
+  </div>
+
+  <!-- ============ TOP NAV (main app screens) ============ -->
+  <sc-if value="{{ showMainNav }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid rgba(46,32,19,.12);background:#F5ECD8;flex-wrap:wrap;gap:16px;position:relative;z-index:1;">
+      <div style="display:flex;align-items:center;gap:12px;cursor:pointer;" onClick="{{ goDashboard }}">
+        <div style="width:44px;height:26px;border-radius:44px 44px 0 0;border:1.5px solid rgba(46,32,19,.16);border-bottom:none;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="flex:1;background:#C8592F;"></div>
+          <div style="flex:1;background:#E3A73E;"></div>
+          <div style="flex:1;background:#7C8C4A;"></div>
+        </div>
+        <div style="font-family:'Bree Serif',serif;font-size:26px;color:#2E2013;">Game Night</div>
+      </div>
+      <div style="display:flex;gap:28px;align-items:center;">
+        <div style="font-size:15px;font-weight:{{ dashboardWeight }};color:{{ dashboardColor }};cursor:pointer;border-bottom:{{ dashboardUnderline }};padding-bottom:4px;" onClick="{{ goDashboard }}">Dashboard</div>
+        <div style="font-size:15px;font-weight:{{ catalogWeight }};color:{{ catalogColor }};cursor:pointer;border-bottom:{{ catalogUnderline }};padding-bottom:4px;" onClick="{{ goCatalog }}">Catalog</div>
+        <div style="font-size:15px;font-weight:{{ friendsWeight }};color:{{ friendsColor }};cursor:pointer;border-bottom:{{ friendsUnderline }};padding-bottom:4px;" onClick="{{ goFriends }}">Friends</div>
+        <div style="font-size:15px;font-weight:{{ profileWeight }};color:{{ profileColor }};cursor:pointer;border-bottom:{{ profileUnderline }};padding-bottom:4px;" onClick="{{ goProfile }}">Profile</div>
+        <div style="width:38px;height:38px;border-radius:50%;background:#E3A73E;border:1.5px solid rgba(46,32,19,.16);cursor:pointer;" onClick="{{ goProfile }}"></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ ROOM CHROME (create / lobby / table) ============ -->
+  <sc-if value="{{ showRoomChrome }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:14px;padding:16px 32px;border-bottom:1px solid rgba(46,32,19,.12);background:#F5ECD8;position:relative;z-index:1;">
+      <div style="width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(46,32,19,.16);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;background:#fff;" onClick="{{ goDashboard }}">←</div>
+      <div style="font-family:'Bree Serif',serif;font-size:20px;">{{ roomChromeTitle }}</div>
+      <sc-if value="{{ isTableScreen }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-left:auto;border:1.5px solid rgba(46,32,19,.16);color:#2E2013;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;background:#fff;">End Game Early</div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ============ DASHBOARD ============ -->
+  <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+
+    <!-- device toggle -->
+    <div style="max-width:1100px;margin:0 auto;padding:14px 32px 0;position:relative;z-index:1;display:flex;justify-content:flex-end;">
+      <div style="display:inline-flex;border:1.5px solid rgba(46,32,19,.18);border-radius:20px;overflow:hidden;background:#F5ECD8;">
+        <div style="padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;background:{{ desktopToggleBg }};color:{{ desktopToggleColor }};" onClick="{{ setDesktopDevice }}">Desktop</div>
+        <div style="padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;background:{{ mobileToggleBg }};color:{{ mobileToggleColor }};" onClick="{{ setMobileDevice }}">Mobile</div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isDesktopDevice }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:1100px;margin:0 auto;padding:26px 32px 40px;position:relative;z-index:1;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:28px;">
+        <div>
+          <div style="font-family:'Bree Serif',serif;font-size:48px;letter-spacing:-1px;">My Games</div>
+          <div style="font-size:15px;color:rgba(46,32,19,.6);margin-top:6px;">Pick up where you left off, or start something new.</div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div style="background:#C8592F;color:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:30px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 20px rgba(46,32,19,.18);" onClick="{{ goCreate }}">+ Create Room</div>
+          <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:30px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:8px;">Join via code <span style="font-family:monospace;letter-spacing:2px;color:rgba(46,32,19,.5);">····</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">
+        <sc-for list="{{ dashboardGames }}" as="g" hint-placeholder-count="3">
+          <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:20px;padding:20px;box-shadow:0 12px 28px rgba(46,32,19,.14);">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;">
+              <div style="width:48px;height:48px;border-radius:12px;border:1.5px solid rgba(46,32,19,.16);background:repeating-linear-gradient(45deg,#E3A73E33,#E3A73E33 6px,#F5ECD8 6px,#F5ECD8 12px);"></div>
+              <div>
+                <div style="font-weight:700;font-size:16px;">{{ g.name }}</div>
+                <div style="font-size:12px;color:rgba(46,32,19,.55);">Love Letter</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;">
+                <sc-for list="{{ g.players }}" as="p" hint-placeholder-count="3">
+                  <div style="width:26px;height:26px;border-radius:50%;background:{{ p.color }};border:1.5px solid rgba(46,32,19,.16);margin-left:-8px;"></div>
+                </sc-for>
+              </div>
+              <div style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:14px;background:{{ g.badgeBg }};color:{{ g.badgeColor }};border:1.5px solid rgba(46,32,19,.16);">{{ g.status }}</div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="border:1.5px solid rgba(46,32,19,.16);border-radius:20px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:140px;color:rgba(46,32,19,.55);font-size:14px;text-align:center;background-color:#F6E9CE;background-image:radial-gradient(circle, rgba(200,89,47,0.18) 1.4px, transparent 1.6px),radial-gradient(circle, rgba(227,167,62,0.18) 1.4px, transparent 1.6px),radial-gradient(circle, rgba(124,140,74,0.18) 1.4px, transparent 1.6px);background-size:14px 14px,14px 14px,14px 14px;background-position:0 0,5px 7px,9px 2px;">
+          Nothing else going on — <br>browse the <span style="text-decoration:underline;cursor:pointer;font-weight:700;" onClick="{{ goCatalog }}">catalog</span>?
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isMobileDevice }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;justify-content:center;padding:26px 20px 60px;position:relative;z-index:1;">
+      <div style="width:390px;max-width:100%;border:10px solid #2E2013;border-radius:44px;background:#2E2013;box-shadow:0 20px 50px rgba(46,32,19,.28);">
+        <div style="width:90px;height:22px;background:#2E2013;border-radius:12px;margin:8px auto 0;"></div>
+        <div style="background:#F5ECD8;border-radius:32px;overflow:hidden;height:740px;display:flex;flex-direction:column;margin-top:6px;">
+
+          <!-- compact mobile header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid rgba(46,32,19,.1);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:30px;height:18px;border-radius:30px 30px 0 0;border:2px solid rgba(46,32,19,.16);border-bottom:none;overflow:hidden;display:flex;flex-direction:column;">
+                <div style="flex:1;background:#C8592F;"></div>
+                <div style="flex:1;background:#E3A73E;"></div>
+                <div style="flex:1;background:#7C8C4A;"></div>
+              </div>
+              <div style="font-family:'Bree Serif',serif;font-size:18px;">Game Night</div>
+            </div>
+            <div style="width:30px;height:30px;border-radius:50%;background:#E3A73E;border:1.5px solid rgba(46,32,19,.16);"></div>
+          </div>
+
+          <!-- scrollable content -->
+          <div style="flex:1;overflow-y:auto;padding:20px 18px 12px;">
+            <div style="font-family:'Bree Serif',serif;font-size:30px;letter-spacing:-.5px;margin-bottom:4px;">My Games</div>
+            <div style="font-size:13px;color:rgba(46,32,19,.6);margin-bottom:16px;">Pick up where you left off.</div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+              <div style="background:#C8592F;color:#F5ECD8;border-radius:26px;padding:13px;font-weight:700;font-size:14px;text-align:center;cursor:pointer;box-shadow:0 8px 18px rgba(46,32,19,.16);" onClick="{{ goCreate }}">+ Create Room</div>
+              <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:26px;padding:13px;font-weight:700;font-size:14px;text-align:center;cursor:pointer;">Join via code <span style="font-family:monospace;letter-spacing:2px;color:rgba(46,32,19,.5);">····</span></div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <sc-for list="{{ dashboardGames }}" as="g" hint-placeholder-count="3">
+                <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:18px;padding:16px;box-shadow:0 8px 20px rgba(46,32,19,.1);">
+                  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+                    <div style="width:40px;height:40px;border-radius:10px;border:1.5px solid rgba(46,32,19,.16);background:repeating-linear-gradient(45deg,#E3A73E33,#E3A73E33 6px,#F5ECD8 6px,#F5ECD8 12px);flex:none;"></div>
+                    <div>
+                      <div style="font-weight:700;font-size:14px;">{{ g.name }}</div>
+                      <div style="font-size:11px;color:rgba(46,32,19,.55);">Love Letter</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;">
+                      <sc-for list="{{ g.players }}" as="p" hint-placeholder-count="3">
+                        <div style="width:20px;height:20px;border-radius:50%;background:{{ p.color }};border:1.5px solid rgba(46,32,19,.16);margin-left:-7px;"></div>
+                      </sc-for>
+                    </div>
+                    <div style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:12px;background:{{ g.badgeBg }};color:{{ g.badgeColor }};border:1.5px solid rgba(46,32,19,.16);">{{ g.status }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- bottom tab bar -->
+          <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 0 16px;border-top:1px solid rgba(46,32,19,.1);background:#F5ECD8;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onClick="{{ goDashboard }}">
+              <div style="width:8px;height:8px;border-radius:50%;background:{{ dashboardColor }};"></div>
+              <div style="font-size:10px;font-weight:{{ dashboardWeight }};color:{{ dashboardColor }};">Dashboard</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onClick="{{ goCatalog }}">
+              <div style="width:8px;height:8px;border-radius:50%;background:{{ catalogColor }};"></div>
+              <div style="font-size:10px;font-weight:{{ catalogWeight }};color:{{ catalogColor }};">Catalog</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onClick="{{ goFriends }}">
+              <div style="width:8px;height:8px;border-radius:50%;background:{{ friendsColor }};"></div>
+              <div style="font-size:10px;font-weight:{{ friendsWeight }};color:{{ friendsColor }};">Friends</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onClick="{{ goProfile }}">
+              <div style="width:8px;height:8px;border-radius:50%;background:{{ profileColor }};"></div>
+              <div style="font-size:10px;font-weight:{{ profileWeight }};color:{{ profileColor }};">Profile</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+  </sc-if>
+
+  <!-- ============ CATALOG ============ -->
+  <sc-if value="{{ isCatalog }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1100px;margin:0 auto;padding:40px 32px;position:relative;z-index:1;">
+      <div style="margin-bottom:28px;">
+        <div style="font-family:'Bree Serif',serif;font-size:46px;letter-spacing:-1px;margin-bottom:6px;">Choose a Game</div>
+        <div style="font-size:15px;color:rgba(46,32,19,.6);">More tables are pulling up a chair soon.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px;">
+        <sc-for list="{{ catalogGames }}" as="game" hint-placeholder-count="3">
+          <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:20px;overflow:hidden;box-shadow:0 12px 28px rgba(46,32,19,.14);opacity:{{ game.opacity }};">
+            <div style="height:150px;background:repeating-linear-gradient(45deg,{{ game.stripeColor }}33,{{ game.stripeColor }}33 8px,#F5ECD8 8px,#F5ECD8 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:11px;color:rgba(46,32,19,.4);border-bottom:1px solid rgba(46,32,19,.12);">game art</div>
+            <div style="padding:16px;">
+              <div style="font-weight:800;font-size:18px;margin-bottom:2px;">{{ game.name }}</div>
+              <div style="font-size:13px;color:rgba(46,32,19,.55);margin-bottom:12px;">{{ game.range }}</div>
+              <sc-if value="{{ game.available }}" hint-placeholder-val="{{ true }}">
+                <div style="background:#C8592F;color:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:20px;padding:9px;text-align:center;font-weight:700;font-size:14px;cursor:pointer;" onClick="{{ goCreate }}">Play Now</div>
+              </sc-if>
+              <sc-if value="{{ game.comingSoon }}" hint-placeholder-val="{{ false }}">
+                <div style="border:3px dashed rgba(46,32,19,.4);color:rgba(46,32,19,.5);border-radius:20px;padding:9px;text-align:center;font-weight:700;font-size:13px;">🔒 Coming Soon</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ CREATE ROOM ============ -->
+  <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:640px;margin:0 auto;padding:44px 32px;position:relative;z-index:1;">
+      <div style="font-family:'Bree Serif',serif;font-size:36px;letter-spacing:-1px;margin-bottom:4px;text-shadow:0 2px 14px rgba(200,89,47,.18);">Set Up Your Table</div>
+      <div style="font-size:15px;color:rgba(46,32,19,.6);margin-bottom:30px;">Love Letter · configure before you invite friends.</div>
+
+      <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:20px;padding:26px;box-shadow:0 12px 28px rgba(46,32,19,.14);display:flex;flex-direction:column;gap:26px;">
+
+        <div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Player count</div>
+          <div style="display:flex;align-items:center;gap:18px;">
+            <div style="width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(46,32,19,.16);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;cursor:pointer;background:#fff;" onClick="{{ decPlayers }}">–</div>
+            <div style="font-family:'Bree Serif',serif;font-size:32px;width:40px;text-align:center;">{{ playerCount }}</div>
+            <div style="width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(46,32,19,.16);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;cursor:pointer;background:#fff;" onClick="{{ incPlayers }}">+</div>
+            <div style="font-size:13px;color:rgba(46,32,19,.55);">players (2–8)</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Ruleset</div>
+          <div style="display:flex;gap:10px;">
+            <div style="flex:1;text-align:center;padding:10px;border-radius:16px;border:1.5px solid rgba(46,32,19,.16);cursor:pointer;font-weight:700;font-size:14px;background:{{ classicBg }};color:{{ classicColor }};" onClick="{{ pickClassic }}">Classic</div>
+            <div style="flex:1;text-align:center;padding:10px;border-radius:16px;border:1.5px solid rgba(46,32,19,.16);cursor:pointer;font-weight:700;font-size:14px;background:{{ rumorBg }};color:{{ rumorColor }};" onClick="{{ pickRumor }}">Rumor Variant</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-weight:700;font-size:15px;">Auto-skip inactive players</div>
+            <div style="font-size:12px;color:rgba(46,32,19,.55);margin-top:2px;">Skip a turn if a player doesn't act in time</div>
+          </div>
+          <div style="width:52px;height:30px;border-radius:20px;border:1.5px solid rgba(46,32,19,.16);background:{{ autoSkipTrackColor }};position:relative;cursor:pointer;flex:none;" onClick="{{ toggleAutoSkip }}">
+            <div style="width:20px;height:20px;border-radius:50%;background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);position:absolute;top:1px;left:{{ autoSkipThumbLeft }};transition:left .15s;"></div>
+          </div>
+        </div>
+
+        <div style="border-top:2px dashed rgba(46,32,19,.3);padding-top:22px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:10px;">Invite code</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div style="flex:1;font-family:monospace;font-size:22px;letter-spacing:6px;text-align:center;padding:12px;border:1.5px solid rgba(46,32,19,.16);border-radius:14px;background:#E8DABF;font-weight:700;">XKQP</div>
+            <div style="border:1.5px solid rgba(46,32,19,.16);border-radius:14px;padding:12px 18px;font-weight:700;font-size:13px;cursor:pointer;background:#E3A73E;">Copy</div>
+            <div style="border:1.5px solid rgba(46,32,19,.16);border-radius:14px;padding:12px 18px;font-weight:700;font-size:13px;cursor:pointer;background:#7C8C4A;color:#F5ECD8;">Share</div>
+          </div>
+        </div>
+
+        <div style="background:#C8592F;color:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:30px;padding:14px;text-align:center;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 8px 20px rgba(46,32,19,.18);" onClick="{{ goLobby }}">Create Room →</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ LOBBY / WAITING ROOM ============ -->
+  <sc-if value="{{ isLobby }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:640px;margin:0 auto;padding:44px 32px;position:relative;z-index:1;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <div style="font-family:'Bree Serif',serif;font-size:36px;letter-spacing:-1px;text-shadow:0 2px 14px rgba(227,167,62,.2);">Waiting Room</div>
+        <div style="font-family:monospace;font-size:16px;letter-spacing:3px;color:rgba(46,32,19,.55);">XKQP</div>
+      </div>
+      <div style="font-size:15px;color:rgba(46,32,19,.6);margin-bottom:26px;">{{ lobbyFilledCount }} of {{ playerCount }} seats filled</div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:26px;">
+        <sc-for list="{{ lobbySeats }}" as="seat" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:14px;background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:16px;padding:14px 18px;">
+            <sc-if value="{{ seat.filled }}" hint-placeholder-val="{{ true }}">
+              <div style="position:relative;">
+                <div style="width:42px;height:42px;border-radius:50%;background:{{ seat.color }};border:1.5px solid rgba(46,32,19,.16);"></div>
+                <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:{{ seat.statusColor }};border:2px solid #F5ECD8;"></div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:700;font-size:15px;">{{ seat.name }}<span style="font-weight:400;color:rgba(46,32,19,.5);font-size:12px;"> {{ seat.hostTag }}</span></div>
+                <div style="font-size:12px;color:rgba(46,32,19,.5);">{{ seat.statusLabel }}</div>
+              </div>
+              <sc-if value="{{ seat.canLeave }}" hint-placeholder-val="{{ false }}">
+                <div style="border:1.5px solid rgba(46,32,19,.16);border-radius:14px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Leave</div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ seat.empty }}" hint-placeholder-val="{{ false }}">
+              <div style="width:42px;height:42px;border-radius:50%;border:1.5px dashed rgba(46,32,19,.28);"></div>
+              <div style="flex:1;font-size:14px;color:rgba(46,32,19,.4);">Open seat</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:{{ startButtonBg }};color:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:30px;padding:16px;text-align:center;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 8px 20px rgba(46,32,19,.18);" onClick="{{ goTable }}">Start Game</div>
+      <div style="text-align:center;font-size:12px;color:rgba(46,32,19,.5);margin-top:10px;">Only the host can start — need at least 2 players.</div>
+    </div>
+  </sc-if>
+
+  <!-- ============ ACTIVE GAME TABLE ============ -->
+  <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1100px;margin:0 auto;padding:28px 32px;display:flex;gap:20px;flex-wrap:wrap;position:relative;z-index:1;">
+      <div style="flex:2;min-width:420px;">
+        <div style="display:flex;justify-content:space-around;margin-bottom:22px;flex-wrap:wrap;gap:14px;">
+          <sc-for list="{{ tableOpponents }}" as="op" hint-placeholder-count="3">
+            <div style="text-align:center;">
+              <div style="position:relative;display:inline-block;">
+                <div style="width:56px;height:56px;border-radius:50%;background:{{ op.color }};border:3px solid {{ op.ringColor }};box-shadow:{{ op.ringShadow }};"></div>
+                <div style="position:absolute;bottom:0;right:0;width:15px;height:15px;border-radius:50%;background:{{ op.statusColor }};border:2px solid #E8DABF;"></div>
+              </div>
+              <div style="font-weight:700;font-size:13px;margin-top:6px;">{{ op.name }}</div>
+              <div style="font-size:11px;color:rgba(46,32,19,.5);margin-bottom:6px;">{{ op.statusLabel }}</div>
+              <div style="font-size:10px;color:rgba(46,32,19,.5);margin-bottom:4px;">Discard</div>
+              <div style="display:flex;gap:3px;justify-content:center;">
+                <sc-for list="{{ op.discards }}" as="d" hint-placeholder-count="2">
+                  <div style="width:22px;height:30px;border:1.5px solid rgba(46,32,19,.16);border-radius:4px;background:repeating-linear-gradient(45deg,#C8592F22,#C8592F22 4px,#F5ECD8 4px,#F5ECD8 8px);"></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin:22px 0;">
+          <div style="border:1.5px dashed #C8592F;border-radius:20px;padding:8px 20px;font-weight:700;font-size:15px;color:#C8592F;">▶ {{ currentTurnName }}'s turn</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:44px;height:60px;border:1.5px solid rgba(46,32,19,.16);border-radius:8px;background:repeating-linear-gradient(45deg,#7C8C4A33,#7C8C4A33 6px,#F5ECD8 6px,#F5ECD8 12px);"></div>
+            <div style="font-size:13px;color:rgba(46,32,19,.6);">Deck: {{ deckCount }} left</div>
+          </div>
+        </div>
+
+        <div style="border:3px solid #C8592F;background:#FDF0E5;border-radius:18px;padding:16px;margin-top:16px;">
+          <div style="font-size:12px;font-weight:800;color:#C8592F;letter-spacing:1px;margin-bottom:10px;">YOUR HAND — PRIVATE</div>
+          <div style="display:flex;gap:12px;">
+            <sc-for list="{{ yourHand }}" as="card" hint-placeholder-count="2">
+              <div style="width:70px;height:98px;border:1.5px solid rgba(46,32,19,.16);border-radius:10px;background:repeating-linear-gradient(45deg,{{ card.stripe }}33,{{ card.stripe }}33 7px,#F5ECD8 7px,#F5ECD8 14px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;">
+                <div style="font-weight:800;font-size:13px;background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:8px;padding:2px 8px;">{{ card.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:220px;background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:18px;padding:16px;box-shadow:0 12px 28px rgba(46,32,19,.14);height:fit-content;">
+        <div style="font-family:'Bree Serif',serif;font-size:18px;margin-bottom:10px;">Action Log</div>
+        <div style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;">
+          <sc-for list="{{ actionLog }}" as="entry" hint-placeholder-count="5">
+            <div style="font-size:13px;color:rgba(46,32,19,.75);border-bottom:1px dashed rgba(46,32,19,.2);padding-bottom:6px;">{{ entry }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ PROFILE ============ -->
+  <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:640px;margin:0 auto;padding:44px 32px;position:relative;z-index:1;">
+      <div style="display:flex;align-items:center;gap:22px;margin-bottom:36px;border:1.5px solid rgba(46,32,19,.16);border-radius:22px;padding:26px;box-shadow:0 12px 28px rgba(46,32,19,.14);background-color:#F6E9CE;background-image:radial-gradient(circle, rgba(200,89,47,0.18) 1.5px, transparent 1.7px),radial-gradient(circle, rgba(227,167,62,0.18) 1.5px, transparent 1.7px),radial-gradient(circle, rgba(124,140,74,0.18) 1.5px, transparent 1.7px);background-size:14px 14px,14px 14px,14px 14px;background-position:0 0,5px 7px,9px 2px;">
+        <div style="width:88px;height:88px;border-radius:50%;background:#E3A73E;border:2px solid rgba(46,32,19,.22);flex:none;"></div>
+        <div>
+          <div style="font-family:'Bree Serif',serif;font-size:38px;letter-spacing:-1px;text-shadow:0 1px 0 rgba(255,255,255,.6);">Jordan Rivera</div>
+          <div style="font-size:14px;color:rgba(46,32,19,.6);margin-top:2px;">Joined June 2026 · 4 friends</div>
+        </div>
+      </div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:14px;">Stats by game</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <sc-for list="{{ profileStats }}" as="s" hint-placeholder-count="3">
+          <div style="background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:16px;opacity:{{ s.opacity }};box-shadow:0 8px 20px rgba(46,32,19,.18);">
+            <div style="width:48px;height:48px;border-radius:12px;border:1.5px solid rgba(46,32,19,.16);background:repeating-linear-gradient(45deg,{{ s.stripe }}33,{{ s.stripe }}33 6px,#F5ECD8 6px,#F5ECD8 12px);"></div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:16px;">{{ s.name }}</div>
+              <sc-if value="{{ s.live }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:13px;color:rgba(46,32,19,.6);">{{ s.wins }}W – {{ s.losses }}L · {{ s.winRate }}% win rate</div>
+              </sc-if>
+              <sc-if value="{{ s.notLive }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:13px;color:rgba(46,32,19,.4);">Coming soon</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ FRIENDS / FOLLOWING ============ -->
+  <sc-if value="{{ isFriends }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:640px;margin:0 auto;padding:44px 32px;position:relative;z-index:1;">
+      <div style="margin-bottom:26px;">
+        <div style="font-family:'Bree Serif',serif;font-size:42px;letter-spacing:-1px;margin-bottom:6px;">Following</div>
+        <div style="font-size:15px;color:rgba(46,32,19,.6);">People you follow — see who's around for a game.</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:22px;">
+        <div style="flex:1;border:1.5px solid rgba(46,32,19,.16);border-radius:20px;padding:12px 18px;font-size:14px;color:rgba(46,32,19,.45);background:#F5ECD8;">Search by username…</div>
+        <div style="background:#7C8C4A;color:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:20px;padding:12px 20px;font-weight:700;font-size:14px;cursor:pointer;">+ Follow</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ friendsList }}" as="f" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:14px;background:#F5ECD8;border:1.5px solid rgba(46,32,19,.16);border-radius:16px;padding:14px 18px;">
+            <div style="position:relative;">
+              <div style="width:42px;height:42px;border-radius:50%;background:{{ f.color }};border:1.5px solid rgba(46,32,19,.16);"></div>
+              <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:{{ f.statusColor }};border:2px solid #F5ECD8;"></div>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15px;">{{ f.name }}</div>
+              <div style="font-size:12px;color:rgba(46,32,19,.5);">{{ f.statusLabel }}</div>
+            </div>
+            <div style="border:1.5px solid rgba(46,32,19,.16);border-radius:14px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Invite</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'dashboard',
+    playerCount: 4,
+    variant: 'classic',
+    autoSkip: false,
+    device: 'desktop',
+  };
+
+  setDesktopDevice = () => this.setState({ device: 'desktop' });
+  setMobileDevice = () => this.setState({ device: 'mobile' });
+
+  goDashboard = () => this.setState({ screen: 'dashboard' });
+  goCatalog = () => this.setState({ screen: 'catalog' });
+  goCreate = () => this.setState({ screen: 'create' });
+  goLobby = () => this.setState({ screen: 'lobby' });
+  goTable = () => this.setState({ screen: 'table' });
+  goProfile = () => this.setState({ screen: 'profile' });
+  goFriends = () => this.setState({ screen: 'friends' });
+
+  incPlayers = () => this.setState(s => ({ playerCount: Math.min(8, s.playerCount + 1) }));
+  decPlayers = () => this.setState(s => ({ playerCount: Math.max(2, s.playerCount - 1) }));
+  pickClassic = () => this.setState({ variant: 'classic' });
+  pickRumor = () => this.setState({ variant: 'rumor' });
+  toggleAutoSkip = () => this.setState(s => ({ autoSkip: !s.autoSkip }));
+
+  renderVals() {
+    const s = this.state;
+    const ink = '#2E2013';
+    const terracotta = '#C8592F';
+    const mustard = '#E3A73E';
+    const avocado = '#7C8C4A';
+    const cream = '#F5ECD8';
+
+    const navItem = (name) => {
+      const active = s.screen === name;
+      return {
+        weight: active ? '800' : '500',
+        color: active ? ink : 'rgba(46,32,19,.55)',
+        underline: active ? `3px solid ${terracotta}` : '3px solid transparent',
+      };
+    };
+    const dash = navItem('dashboard');
+    const cat = navItem('catalog');
+    const fr = navItem('friends');
+    const prof = navItem('profile');
+
+    const dashboardGames = [
+      { name: 'Friday Night Showdown', status: 'Your Turn', badgeBg: terracotta, badgeColor: cream, players: [{ color: avocado }, { color: mustard }, { color: '#A25A4A' }] },
+      { name: "Sam's Table", status: 'Waiting…', badgeBg: 'transparent', badgeColor: ink, players: [{ color: avocado }, { color: '#d8cbb0' }] },
+      { name: 'The Regulars', status: 'In Progress', badgeBg: 'transparent', badgeColor: ink, players: [{ color: avocado }, { color: mustard }] },
+    ];
+
+    const catalogGames = [
+      { name: 'Love Letter', range: '2–8 players', available: true, comingSoon: false, opacity: 1, stripeColor: terracotta },
+      { name: 'Connect 4', range: '2 players', available: false, comingSoon: true, opacity: 0.55, stripeColor: '#8a8272' },
+      { name: 'Mancala', range: '2 players', available: false, comingSoon: true, opacity: 0.55, stripeColor: '#8a8272' },
+    ];
+
+    const lobbyBase = [
+      { name: 'You', filled: true, color: mustard, statusColor: avocado, statusLabel: 'Online · Host', hostTag: '(Host)', canLeave: false },
+      { name: 'Sam', filled: true, color: avocado, statusColor: avocado, statusLabel: 'Online', hostTag: '', canLeave: true },
+      { name: 'Priya', filled: true, color: '#A25A4A', statusColor: '#b0a48c', statusLabel: 'Offline', hostTag: '', canLeave: true },
+    ];
+    const lobbySeats = [];
+    for (let i = 0; i < s.playerCount; i++) {
+      const seat = lobbyBase[i] || { filled: false };
+      lobbySeats.push({ ...seat, empty: !seat.filled });
+    }
+    const lobbyFilledCount = lobbyBase.length;
+
+    const tableOpponents = [
+      { name: 'Sam', color: avocado, ringColor: ink, ringShadow: 'none', statusColor: avocado, statusLabel: 'Online', discards: [{}, {}] },
+      { name: 'Priya', color: '#A25A4A', ringColor: ink, ringShadow: 'none', statusColor: '#b0a48c', statusLabel: 'Offline', discards: [{}] },
+      { name: 'Alex', color: mustard, ringColor: terracotta, ringShadow: `0 0 0 3px ${cream}, 0 0 0 6px ${terracotta}`, statusColor: avocado, statusLabel: 'Online', discards: [] },
+    ];
+
+    const actionLog = [
+      'Sam played Guard, guessed Priya has a Baron. Wrong.',
+      'Priya discarded Handmaid — protected until next turn.',
+      'You drew a card.',
+      "Alex played Prince — Sam discards and draws new.",
+      'Sam is out of the round.',
+      'New round dealt.',
+    ];
+
+    const yourHand = [
+      { name: 'Guard', stripe: terracotta },
+      { name: 'Priest', stripe: avocado },
+    ];
+
+    const profileStats = [
+      { name: 'Love Letter', live: true, notLive: false, wins: 14, losses: 9, winRate: 61, opacity: 1, stripe: terracotta },
+      { name: 'Connect 4', live: false, notLive: true, opacity: 0.5, stripe: '#8a8272' },
+      { name: 'Mancala', live: false, notLive: true, opacity: 0.5, stripe: '#8a8272' },
+    ];
+
+    const friendsList = [
+      { name: 'Sam', color: avocado, statusColor: avocado, statusLabel: 'Online' },
+      { name: 'Priya', color: '#A25A4A', statusColor: '#b0a48c', statusLabel: 'Offline' },
+      { name: 'Alex', color: mustard, statusColor: avocado, statusLabel: 'Online' },
+      { name: 'Jordan', color: '#7C8C4A', statusColor: '#b0a48c', statusLabel: 'Offline' },
+    ];
+
+    const roomTitles = { create: 'Set Up Your Table', lobby: 'Waiting Room', table: 'Friday Night Showdown' };
+
+    return {
+      showMainNav: ['dashboard', 'catalog', 'profile', 'friends'].includes(s.screen),
+      showRoomChrome: ['create', 'lobby', 'table'].includes(s.screen),
+      isTableScreen: s.screen === 'table',
+      roomChromeTitle: roomTitles[s.screen] || '',
+
+      isDashboard: s.screen === 'dashboard',
+      isCatalog: s.screen === 'catalog',
+      isCreate: s.screen === 'create',
+      isLobby: s.screen === 'lobby',
+      isTable: s.screen === 'table',
+      isProfile: s.screen === 'profile',
+      isFriends: s.screen === 'friends',
+
+      goDashboard: this.goDashboard, goCatalog: this.goCatalog, goCreate: this.goCreate,
+      goLobby: this.goLobby, goTable: this.goTable, goProfile: this.goProfile, goFriends: this.goFriends,
+
+      dashboardWeight: dash.weight, dashboardColor: dash.color, dashboardUnderline: dash.underline,
+      catalogWeight: cat.weight, catalogColor: cat.color, catalogUnderline: cat.underline,
+      friendsWeight: fr.weight, friendsColor: fr.color, friendsUnderline: fr.underline,
+      profileWeight: prof.weight, profileColor: prof.color, profileUnderline: prof.underline,
+
+      dashboardGames, catalogGames,
+
+      isDesktopDevice: s.device === 'desktop',
+      isMobileDevice: s.device === 'mobile',
+      setDesktopDevice: this.setDesktopDevice,
+      setMobileDevice: this.setMobileDevice,
+      desktopToggleBg: s.device === 'desktop' ? terracotta : 'transparent',
+      desktopToggleColor: s.device === 'desktop' ? cream : ink,
+      mobileToggleBg: s.device === 'mobile' ? terracotta : 'transparent',
+      mobileToggleColor: s.device === 'mobile' ? cream : ink,
+
+      playerCount: s.playerCount,
+      incPlayers: this.incPlayers, decPlayers: this.decPlayers,
+      pickClassic: this.pickClassic, pickRumor: this.pickRumor,
+      classicBg: s.variant === 'classic' ? terracotta : cream,
+      classicColor: s.variant === 'classic' ? cream : ink,
+      rumorBg: s.variant === 'rumor' ? terracotta : cream,
+      rumorColor: s.variant === 'rumor' ? cream : ink,
+      toggleAutoSkip: this.toggleAutoSkip,
+      autoSkipTrackColor: s.autoSkip ? avocado : '#e3dac6',
+      autoSkipThumbLeft: s.autoSkip ? '22px' : '1px',
+
+      lobbySeats, lobbyFilledCount,
+      startButtonBg: lobbyFilledCount >= 2 ? terracotta : '#b0a48c',
+
+      tableOpponents, currentTurnName: 'Alex', deckCount: 9, actionLog, yourHand,
+
+      profileStats,
+      friendsList,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

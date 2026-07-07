@@ -1,0 +1,67 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSelf(uid);
+
+      match /follows/{followedUid} {
+        allow read, write: if isSelf(uid);
+      }
+    }
+
+    // Read-only from clients — seeded via scripts/seedCatalog.mjs (Admin SDK).
+    match /gameCatalog/{gameType} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /roomCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    match /gameRooms/{roomId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.hostUid == request.auth.uid;
+      // Covers both existing players updating the room (leave/start/end) and a
+      // new joiner adding themselves to playerUids (they aren't in the old
+      // doc yet, so check the *incoming* array too).
+      allow update: if isSignedIn() && (
+        request.auth.uid in resource.data.playerUids ||
+        request.auth.uid in request.resource.data.playerUids
+      );
+      allow delete: if false;
+
+      // Phase 1 (real Love Letter gameplay) territory — not written by this
+      // build, but locked down now so hidden information never leaks.
+      match /state/{document=**} {
+        allow read: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/gameRooms/$(roomId)).data.playerUids;
+        allow write: if false;
+      }
+
+      match /hands/{uid} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+
+      match /log/{entryId} {
+        allow read: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/gameRooms/$(roomId)).data.playerUids;
+        allow write: if false;
+      }
+    }
+  }
+}
