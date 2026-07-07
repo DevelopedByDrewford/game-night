@@ -1,19 +1,20 @@
 import styled from 'styled-components';
 
-const Mark = styled.div`
+// Ziggurat mark: a stepped pyramid of centered bars, widest at the bottom.
+const Stack = styled.div`
   flex: none;
-  width: ${({ $w }) => $w}px;
-  height: ${({ $h }) => $h}px;
-  border-radius: ${({ $w }) => $w}px ${({ $w }) => $w}px 0 0;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-bottom: none;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: ${({ $gap }) => $gap}px;
+`;
 
-  div {
-    flex: 1;
-  }
+const Bar = styled.div`
+  width: ${({ $w }) => $w}px;
+  height: ${({ $h }) => $h}px;
+  border-radius: ${({ $r }) => $r}px;
+  background: ${({ $bg }) => $bg};
+  opacity: ${({ $opacity }) => $opacity};
 `;
 
 const Wordmark = styled.div`
@@ -30,14 +31,27 @@ const Row = styled.div`
   cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
 `;
 
+// Proportions match the design reference at a 88px-wide base bar.
+const BASE_WIDTH = 88;
+const BARS = [
+  { w: 28, bg: '#C8592F', opacity: 1 },
+  { w: 48, bg: '#E3A73E', opacity: 1 },
+  { w: 68, bg: '#7C8C4A', opacity: 1 },
+  { w: 88, bg: '#C8592F', opacity: 0.55 },
+];
+
 export function LogoMark({ size = 44 }) {
-  const height = Math.round(size * (26 / 44));
+  const scale = size / BASE_WIDTH;
+  const barHeight = 12 * scale;
+  const gap = 3 * scale;
+  const radius = 3 * scale;
+
   return (
-    <Mark $w={size} $h={height}>
-      <div style={{ background: '#C8592F' }} />
-      <div style={{ background: '#E3A73E' }} />
-      <div style={{ background: '#7C8C4A' }} />
-    </Mark>
+    <Stack $gap={gap}>
+      {BARS.map((bar, i) => (
+        <Bar key={i} $w={bar.w * scale} $h={barHeight} $r={radius} $bg={bar.bg} $opacity={bar.opacity} />
+      ))}
+    </Stack>
   );
 }
 

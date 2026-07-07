@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styled from 'styled-components';
 import { StatusDot } from './StatusDot.jsx';
 
@@ -15,6 +16,14 @@ const Circle = styled.div`
   border: ${({ $borderWidth }) => $borderWidth}px solid
     ${({ $borderColor, theme }) => $borderColor || theme.colors.border};
   box-shadow: ${({ $boxShadow }) => $boxShadow || 'none'};
+  overflow: hidden;
+`;
+
+const Img = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 `;
 
 const DotWrap = styled.div`
@@ -26,6 +35,7 @@ const DotWrap = styled.div`
 export function Avatar({
   size = 42,
   color,
+  imageUrl,
   online,
   showStatus = false,
   statusRingColor,
@@ -34,6 +44,9 @@ export function Avatar({
   boxShadow,
   onClick,
 }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(imageUrl) && !imageFailed;
+
   return (
     <Wrap $clickable={Boolean(onClick)} onClick={onClick}>
       <Circle
@@ -42,7 +55,9 @@ export function Avatar({
         $borderColor={borderColor}
         $borderWidth={borderWidth}
         $boxShadow={boxShadow}
-      />
+      >
+        {showImage && <Img src={imageUrl} alt="" onError={() => setImageFailed(true)} />}
+      </Circle>
       {showStatus && (
         <DotWrap>
           <StatusDot

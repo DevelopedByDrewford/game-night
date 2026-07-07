@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Safari pinned-tab / mask icon: must be a single-color silhouette on a transparent background -->
+  <rect x="201" y="136" width="110" height="54" rx="14" fill="#000000"/>
+  <rect x="166" y="198" width="180" height="54" rx="14" fill="#000000"/>
+  <rect x="131" y="260" width="250" height="54" rx="14" fill="#000000"/>
+  <rect x="96"  y="322" width="320" height="54" rx="14" fill="#000000"/>
+</svg>

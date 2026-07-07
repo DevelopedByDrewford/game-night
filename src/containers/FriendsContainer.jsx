@@ -164,7 +164,14 @@ export function FriendsContainer() {
           const online = Boolean(presence[friend.uid]);
           return (
             <Row key={friend.uid}>
-              <Avatar size={42} color={colorForId(friend.uid)} showStatus online={online} statusRingColor="#F5ECD8" />
+              <Avatar
+                size={42}
+                color={colorForId(friend.uid)}
+                imageUrl={friend.avatarUrl}
+                showStatus
+                online={online}
+                statusRingColor="#F5ECD8"
+              />
               <Info>
                 <NameText>{friend.displayName}</NameText>
                 <StatusText>{online ? 'Online' : 'Offline'}</StatusText>

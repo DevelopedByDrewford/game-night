@@ -17,8 +17,9 @@ export function useProfile() {
 
     const ref = doc(db, 'users', user.uid);
 
-    // Create the profile doc on first sign-in; keep displayName/avatarUrl in
-    // sync with the Google account on later sign-ins without touching createdAt/stats.
+    // Seed the profile from the Google account on first sign-in only —
+    // displayName/avatarUrl (and everything else) become user-owned fields
+    // after that, so profile customization sticks across future sign-ins.
     (async () => {
       const snap = await getDoc(ref);
       if (!snap.exists()) {
@@ -28,14 +29,8 @@ export function useProfile() {
           createdAt: serverTimestamp(),
           stats: {},
         });
-      } else {
-        await setDoc(
-          ref,
-          { displayName: user.displayName || 'Player', avatarUrl: user.photoURL || null },
-          { merge: true }
-        );
       }
-    })().catch((err) => console.error('[useProfile] failed to upsert profile', err));
+    })().catch((err) => console.error('[useProfile] failed to create profile', err));
 
     const unsubscribe = onSnapshot(ref, (snap) => {
       setProfile(snap.exists() ? { id: snap.id, ...snap.data() } : null);

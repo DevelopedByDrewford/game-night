@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Logo } from '../ui/Logo.jsx';
 import { Avatar } from '../ui/Avatar.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useProfile } from '../../hooks/useProfile.js';
 import { colorForId } from '../../utils/colors.js';
 
 const NAV_ITEMS = [
@@ -106,6 +107,7 @@ const TabItem = styled(NavLink)`
 export function NavBar() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const avatarColor = colorForId(user?.uid || '');
 
   return (
@@ -118,7 +120,12 @@ export function NavBar() {
               {item.label}
             </StyledLink>
           ))}
-          <Avatar size={38} color={avatarColor} onClick={() => navigate('/profile')} />
+          <Avatar
+            size={38}
+            color={avatarColor}
+            imageUrl={profile?.avatarUrl}
+            onClick={() => navigate('/profile')}
+          />
         </Links>
       </TopBar>
 
