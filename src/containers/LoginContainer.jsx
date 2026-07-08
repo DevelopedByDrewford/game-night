@@ -32,7 +32,7 @@ const LogoRow = styled.div`
 
 const Subtitle = styled.p`
   font-size: 15px;
-  color: ${({ theme }) => theme.colors.inkFaint};
+  color: rgba(46, 32, 19, 0.6);
   margin: 10px 0 30px;
 `;
 
@@ -57,7 +57,7 @@ const GoogleButton = styled.button`
 
 const ConfigWarning = styled.p`
   font-size: 12px;
-  color: ${({ theme }) => theme.colors.inkFainter};
+  color: rgba(46, 32, 19, 0.5);
   margin-top: 18px;
 `;
 
@@ -72,7 +72,7 @@ export function LoginContainer() {
         <LogoRow>
           <Logo size={56} fontSize={30} showWordmark={false} />
         </LogoRow>
-        <div style={{ fontFamily: "'Bree Serif', serif", fontSize: 30, letterSpacing: '-1px' }}>
+        <div style={{ fontFamily: "'Bree Serif', serif", fontSize: 30, letterSpacing: '-1px', color: '#2e2013' }}>
           Game Night
         </div>
         <Subtitle>Pull up a chair. Sign in to see your games.</Subtitle>

@@ -171,6 +171,18 @@ export function applyCardEffect({ cardId, callerUid, targetUid, guessCardId, han
       result.logMessage = 'played the Princess — out!';
       break;
     }
+    case 'spy': {
+      result.logMessage = 'played Spy.';
+      break;
+    }
+    case 'chancellor': {
+      // No effect here — Chancellor needs deck access (draw 2, choose 1 to
+      // keep) that this pure hands-only function doesn't have. handlers.js
+      // special-cases it right after calling this, using this log line as
+      // the base and appending nothing else in the fizzle (no-cards-left) case.
+      result.logMessage = 'played Chancellor.';
+      break;
+    }
     default:
       throw new Error(`Unknown cardId: ${cardId}`);
   }
@@ -179,6 +191,16 @@ export function applyCardEffect({ cardId, callerUid, targetUid, guessCardId, han
 }
 
 // --- Round end ---------------------------------------------------------------
+
+// Spy's end-of-round bonus: among players still alive when the round ends,
+// find whoever is the ONLY one with a Spy in their discard pile (dedup by
+// uid, not by card count — discarding two Spies yourself still only ever
+// produces one qualifying uid). Returns that uid, or null if zero or 2+
+// players qualify.
+export function spyBonusUid(aliveUids, discardPiles) {
+  const qualifying = aliveUids.filter((uid) => (discardPiles[uid] || []).includes('spy'));
+  return qualifying.length === 1 ? qualifying[0] : null;
+}
 
 export function pickRoundWinners(aliveUids, hands, discardPiles) {
   if (aliveUids.length === 1) return aliveUids;

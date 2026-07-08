@@ -32,7 +32,7 @@ const Title = styled.div`
 
 const Subtitle = styled.div`
   font-size: 15px;
-  color: rgba(46, 32, 19, 0.6);
+  color: ${({ theme }) => theme.colors.inkFaint};
   margin-top: 6px;
 `;
 
@@ -74,6 +74,7 @@ const CodeInput = styled.input`
   border: 1.5px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.surface};
+  color: #2e2013;
   text-transform: uppercase;
 `;
 
@@ -91,7 +92,7 @@ const Grid = styled.div`
 
 const StatusText = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 const STATUS_LABELS = {

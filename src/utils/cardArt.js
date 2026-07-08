@@ -7,11 +7,13 @@ export const THEMES = {
     displayName: 'Classic',
     backImageUrl: '/card-art/love-letter/back.png',
     cardArt: {
+      spy: '/card-art/love-letter/spy-front.png',
       guard: '/card-art/love-letter/guard-front.png',
       priest: '/card-art/love-letter/priest-front.png',
       baron: '/card-art/love-letter/baron-front.png',
       handmaid: '/card-art/love-letter/handmaid-front.png',
       prince: '/card-art/love-letter/prince-front.png',
+      chancellor: '/card-art/love-letter/chancellor-front.png',
       king: '/card-art/love-letter/king-front.png',
       countess: '/card-art/love-letter/countess-front.png',
       princess: '/card-art/love-letter/princess-front.png',

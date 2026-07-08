@@ -23,18 +23,20 @@ const BackButton = styled.button`
   font-size: 18px;
   cursor: pointer;
   background: #fff;
+  color: #2e2013;
   flex: none;
 `;
 
 const Title = styled.div`
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 20px;
+  color: #2e2013;
 `;
 
 const EndGameButton = styled.button`
   margin-left: auto;
   border: 1.5px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.ink};
+  color: #2e2013;
   font-size: 13px;
   font-weight: 700;
   padding: 6px 14px;

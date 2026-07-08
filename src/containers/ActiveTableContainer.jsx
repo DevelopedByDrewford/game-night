@@ -12,9 +12,10 @@ import { useHand } from '../hooks/useHand.js';
 import { useRoomLog } from '../hooks/useRoomLog.js';
 import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
 import { endGameEarly } from '../utils/rooms.js';
-import { playCard } from '../utils/gameplay.js';
+import { playCard, resolveChancellor } from '../utils/gameplay.js';
 import { colorForId } from '../utils/colors.js';
 import { CARD_DEFS, TARGETED_CARDS, cardName } from '../utils/cards.js';
+import { frontImageFor, backImageFor } from '../utils/cardArt.js';
 
 const Layout = styled.div`
   max-width: ${({ theme }) => theme.maxWidth.grid};
@@ -69,13 +70,13 @@ const DeckRow = styled.div`
 
 const DeckCount = styled.div`
   font-size: 13px;
-  color: rgba(46, 32, 19, 0.6);
+  color: ${({ theme }) => theme.colors.inkFaint};
 `;
 
 const TokenCount = styled.div`
   font-size: 13px;
   font-weight: 700;
-  color: rgba(46, 32, 19, 0.7);
+  color: ${({ theme }) => theme.colors.ink};
 `;
 
 const HandPanel = styled.div`
@@ -129,7 +130,7 @@ const MessageText = styled.div`
 
 const StatusText = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 export function ActiveTableContainer({ room }) {
@@ -157,6 +158,7 @@ export function ActiveTableContainer({ room }) {
   }
 
   const myTurn = state.turnUid === user.uid && state.phase === 'playing';
+  const myChancellorPending = state.phase === 'chancellorPending' && state.turnUid === user.uid;
   const nameForUid = (uid) => room.players.find((p) => p.uid === uid)?.displayName || 'A player';
 
   function legalTargetsFor(cardId) {
@@ -214,6 +216,19 @@ export function ActiveTableContainer({ room }) {
     submitPlay({ cardId: 'guard', targetUid: pending.targetUid, guessCardId });
   }
 
+  async function handleKeepCard(keepCardId) {
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      await resolveChancellor({ roomId: room.id, keepCardId });
+    } catch (err) {
+      console.error('[ActiveTableContainer] resolveChancellor failed', err);
+      setMessage({ text: err.message || "Couldn't resolve Chancellor — try again.", error: true });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleEndGameEarly() {
     setEnding(true);
     try {
@@ -232,13 +247,22 @@ export function ActiveTableContainer({ room }) {
       const protectedFlag = Boolean(state.protected[p.uid]);
       const online = Boolean(presence[p.uid]);
       const tokens = state.tokens[p.uid] || 0;
-      const statusLabel = eliminated ? 'Eliminated' : protectedFlag ? 'Protected' : online ? 'Online' : 'Offline';
+      const choosing = state.phase === 'chancellorPending' && state.turnUid === p.uid;
+      const statusLabel = choosing
+        ? 'Choosing…'
+        : eliminated
+        ? 'Eliminated'
+        : protectedFlag
+        ? 'Protected'
+        : online
+        ? 'Online'
+        : 'Offline';
       return {
         name: p.displayName,
         color: colorForId(p.uid),
         online,
         statusLabel: `${statusLabel} · ${tokens} tok`,
-        discardCount: (state.discardPiles[p.uid] || []).length,
+        discards: state.discardPiles[p.uid] || [],
         isCurrentTurn: state.turnUid === p.uid,
       };
     });
@@ -261,9 +285,15 @@ export function ActiveTableContainer({ room }) {
           </Opponents>
 
           <TurnArea>
-            <TurnIndicator>{myTurn ? '▶ Your turn' : `▶ ${nameForUid(state.turnUid)}'s turn`}</TurnIndicator>
+            <TurnIndicator>
+              {myChancellorPending
+                ? '▶ Choose a card to keep…'
+                : myTurn
+                ? '▶ Your turn'
+                : `▶ ${nameForUid(state.turnUid)}'s turn`}
+            </TurnIndicator>
             <DeckRow>
-              <PlayingCard width={44} height={60} radius={8} stripe="#7C8C4A" stripeSize={6} />
+              <PlayingCard width={44} height={60} radius={8} stripe="#7C8C4A" stripeSize={6} backImageUrl={backImageFor()} />
               <DeckCount>Deck: {state.deckCount} left</DeckCount>
             </DeckRow>
             <TokenCount>
@@ -273,14 +303,24 @@ export function ActiveTableContainer({ room }) {
 
           <HandPanel>
             <HandLabel>YOUR HAND — PRIVATE</HandLabel>
+
+            {myChancellorPending && (
+              <PickerTitle>Chancellor — choose 1 card to keep, the rest go to the bottom of the deck</PickerTitle>
+            )}
             <HandCards>
               {hand.map((cardId, i) => (
                 <PlayingCard
                   key={`${cardId}-${i}`}
                   stripe="#C8592F"
                   label={cardName(cardId)}
-                  onClick={() => handleCardClick(cardId)}
-                  style={{ cursor: myTurn && !submitting && !pending ? 'pointer' : 'default' }}
+                  frontImageUrl={frontImageFor(cardId)}
+                  onClick={() => (myChancellorPending ? !submitting && handleKeepCard(cardId) : handleCardClick(cardId))}
+                  style={{
+                    cursor:
+                      (myChancellorPending && !submitting) || (myTurn && !submitting && !pending)
+                        ? 'pointer'
+                        : 'default',
+                  }}
                 />
               ))}
             </HandCards>

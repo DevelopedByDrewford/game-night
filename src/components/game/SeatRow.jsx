@@ -26,6 +26,7 @@ const Info = styled.div`
 const NameRow = styled.div`
   font-weight: 700;
   font-size: 15px;
+  color: #2e2013;
 `;
 
 const HostTag = styled.span`
@@ -53,6 +54,7 @@ const LeaveButton = styled.button`
   font-weight: 700;
   cursor: pointer;
   background: transparent;
+  color: #2e2013;
   font-family: inherit;
 `;
 

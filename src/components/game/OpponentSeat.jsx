@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Avatar } from '../ui/Avatar.jsx';
 import { PlayingCard } from './PlayingCard.jsx';
+import { frontImageFor } from '../../utils/cardArt.js';
 
 const Seat = styled.div`
   text-align: center;
@@ -14,13 +15,13 @@ const Name = styled.div`
 
 const Status = styled.div`
   font-size: 11px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
   margin-bottom: 6px;
 `;
 
 const DiscardLabel = styled.div`
   font-size: 10px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
   margin-bottom: 4px;
 `;
 
@@ -30,7 +31,7 @@ const Discards = styled.div`
   justify-content: center;
 `;
 
-export function OpponentSeat({ name, color, online, statusLabel, discardCount, isCurrentTurn }) {
+export function OpponentSeat({ name, color, online, statusLabel, discards = [], isCurrentTurn }) {
   return (
     <Seat>
       <Avatar
@@ -47,8 +48,16 @@ export function OpponentSeat({ name, color, online, statusLabel, discardCount, i
       <Status>{statusLabel}</Status>
       <DiscardLabel>Discard</DiscardLabel>
       <Discards>
-        {Array.from({ length: discardCount }).map((_, i) => (
-          <PlayingCard key={i} width={22} height={30} radius={4} stripe="#C8592F" stripeSize={4} />
+        {discards.map((cardId, i) => (
+          <PlayingCard
+            key={`${cardId}-${i}`}
+            width={22}
+            height={30}
+            radius={4}
+            stripe="#C8592F"
+            stripeSize={4}
+            frontImageUrl={frontImageFor(cardId)}
+          />
         ))}
       </Discards>
     </Seat>

@@ -15,6 +15,7 @@ const Title = styled.div`
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 18px;
   margin-bottom: 10px;
+  color: #2e2013;
 `;
 
 const List = styled.div`

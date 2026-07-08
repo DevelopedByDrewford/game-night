@@ -8,7 +8,7 @@ import { PageWrap } from '../components/layout/PageWrap.jsx';
 
 const StatusText = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 // Single dynamic route (/rooms/:roomId) that branches on the room's own

@@ -11,7 +11,7 @@ import { isCountessForced, legalTargets } from '../lib/rules.js';
 // read/write ordering, data shape mismatches) that pure-function tests
 // can't see.
 
-function makeRoom({ roomId, hostUid, playerUids }) {
+function makeRoom({ roomId, hostUid, playerUids, ruleset = 'classic' }) {
   return {
     id: roomId,
     gameType: 'love-letter',
@@ -20,7 +20,7 @@ function makeRoom({ roomId, hostUid, playerUids }) {
     status: 'waiting',
     playerUids,
     players: playerUids.map((uid, seat) => ({ uid, displayName: uid, seat })),
-    settings: { playerCount: playerUids.length, ruleset: 'classic', autoSkipEnabled: false },
+    settings: { playerCount: playerUids.length, ruleset, autoSkipEnabled: false },
   };
 }
 
@@ -28,15 +28,26 @@ function pickCardToPlay(hand) {
   return isCountessForced(hand) ? 'countess' : hand[0];
 }
 
-async function playFullGame({ roomId, playerUids }, { setDoc, getDoc }, handlers) {
-  setDoc(`gameRooms/${roomId}`, makeRoom({ roomId, hostUid: playerUids[0], playerUids }));
+async function playFullGame({ roomId, playerUids, ruleset = 'classic' }, { setDoc, getDoc }, handlers) {
+  setDoc(`gameRooms/${roomId}`, makeRoom({ roomId, hostUid: playerUids[0], playerUids, ruleset }));
 
   await handlers.startGame({ auth: { uid: playerUids[0] }, data: { roomId } });
 
   for (let i = 0; i < 300; i++) {
     const room = getDoc(`gameRooms/${roomId}`);
     const state = getDoc(`gameRooms/${roomId}/state/current`);
-    if (room.status === 'completed' || state.phase !== 'playing') return { room, state };
+    if (room.status === 'completed') return { room, state };
+
+    if (state.phase === 'chancellorPending') {
+      const hand = getDoc(`gameRooms/${roomId}/hands/${state.turnUid}`).cards;
+      await handlers.resolveChancellor({
+        auth: { uid: state.turnUid },
+        data: { roomId, keepCardId: hand[0] },
+      });
+      continue;
+    }
+
+    if (state.phase !== 'playing') return { room, state };
 
     const currentUid = state.turnUid;
     const hand = getDoc(`gameRooms/${roomId}/hands/${currentUid}`).cards;
@@ -122,12 +133,91 @@ describe('full game playthrough (fake Firestore)', () => {
     ).rejects.toThrow();
   });
 
-  it('rejects 5+ player rooms with a clear error', async () => {
+  it('rejects 7+ player rooms with a clear error', async () => {
     const { db, setDoc } = createFakeFirestore();
     const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
-    const playerUids = ['a', 'b', 'c', 'd', 'e'];
+    const playerUids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
     setDoc('gameRooms/big', makeRoom({ roomId: 'big', hostUid: 'a', playerUids }));
 
     await expect(handlers.startGame({ auth: { uid: 'a' }, data: { roomId: 'big' } })).rejects.toThrow(/coming soon/);
+  });
+
+  it('accepts a 5-player room, auto-upgrading an invalid stored ruleset to extended', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const playerUids = ['a', 'b', 'c', 'd', 'e'];
+    // ruleset defaults to 'classic' via makeRoom, which is invalid for 5 —
+    // startGame should fall back to 'extended' rather than reject.
+    setDoc('gameRooms/five', makeRoom({ roomId: 'five', hostUid: 'a', playerUids }));
+
+    await handlers.startGame({ auth: { uid: 'a' }, data: { roomId: 'five' } });
+    expect(getDoc('gameRooms/five/state/current').ruleset).toBe('extended');
+  });
+
+  it('plays a 5-player extended-deck game to completion and records stats', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const playerUids = ['a', 'b', 'c', 'd', 'e'];
+
+    const { room, state } = await playFullGame(
+      { roomId: 'room5p', playerUids, ruleset: 'extended' },
+      { setDoc, getDoc },
+      handlers
+    );
+
+    expect(room.status).toBe('completed');
+    expect(state.phase).toBe('gameEnd');
+    expect(Math.max(...playerUids.map((u) => state.tokens[u]))).toBeGreaterThanOrEqual(state.tokensToWin);
+  });
+
+  it('plays a 6-player extended-deck game to completion', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const playerUids = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+    const { room, state } = await playFullGame(
+      { roomId: 'room6p', playerUids, ruleset: 'extended' },
+      { setDoc, getDoc },
+      handlers
+    );
+
+    expect(room.status).toBe('completed');
+    expect(state.phase).toBe('gameEnd');
+  });
+
+  it('resolves a Chancellor play: draws 2, keeps 1, returns the rest to the bottom, and advances the turn', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const playerUids = ['alice', 'bob'];
+    setDoc('gameRooms/chan', makeRoom({ roomId: 'chan', hostUid: 'alice', playerUids, ruleset: 'extended' }));
+    await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'chan' } });
+
+    // Force the deal so the first player definitely holds a Chancellor.
+    const firstUid = getDoc('gameRooms/chan/state/current').turnUid;
+    setDoc(`gameRooms/chan/hands/${firstUid}`, { cards: ['chancellor', 'guard'] });
+    const drawPileBefore = getDoc('gameRooms/chan/secret/deck').drawPile;
+
+    await handlers.playCard({ auth: { uid: firstUid }, data: { roomId: 'chan', cardId: 'chancellor' } });
+
+    const pending = getDoc('gameRooms/chan/state/current');
+    expect(pending.phase).toBe('chancellorPending');
+    expect(pending.turnUid).toBe(firstUid);
+    expect(getDoc(`gameRooms/chan/hands/${firstUid}`).cards).toHaveLength(3);
+    expect(getDoc('gameRooms/chan/secret/deck').drawPile).toHaveLength(drawPileBefore.length - 2);
+
+    // A second playCard call must be rejected while a decision is pending.
+    await expect(
+      handlers.playCard({ auth: { uid: firstUid }, data: { roomId: 'chan', cardId: 'guard' } })
+    ).rejects.toThrow();
+
+    await handlers.resolveChancellor({ auth: { uid: firstUid }, data: { roomId: 'chan', keepCardId: 'guard' } });
+
+    const after = getDoc('gameRooms/chan/state/current');
+    expect(after.phase).toBe('playing');
+    expect(after.turnUid).not.toBe(firstUid);
+    expect(getDoc(`gameRooms/chan/hands/${firstUid}`).cards).toEqual(['guard']);
+    // Net-neutral across the two calls: drew 2 for Chancellor, returned 2 to
+    // the bottom, then dealt exactly 1 card to the next player to end the turn.
+    expect(getDoc('gameRooms/chan/secret/deck').drawPile).toHaveLength(drawPileBefore.length - 1);
   });
 });

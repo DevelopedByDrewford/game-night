@@ -20,7 +20,7 @@ const Bar = styled.div`
 const Wordmark = styled.div`
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ $fontSize }) => $fontSize}px;
-  color: ${({ theme }) => theme.colors.ink};
+  color: #f5e6c7;
   white-space: nowrap;
 `;
 

@@ -21,7 +21,7 @@ const Title = styled.div`
 
 const Subtitle = styled.div`
   font-size: 15px;
-  color: rgba(46, 32, 19, 0.6);
+  color: ${({ theme }) => theme.colors.inkFaint};
   margin-bottom: 30px;
 `;
 
@@ -40,6 +40,7 @@ const SectionLabel = styled.div`
   font-weight: 700;
   font-size: 15px;
   margin-bottom: 12px;
+  color: #2e2013;
 `;
 
 const StepperRow = styled.div`
@@ -60,6 +61,7 @@ const StepperButton = styled.button`
   font-weight: 700;
   cursor: pointer;
   background: #fff;
+  color: #2e2013;
 `;
 
 const StepperValue = styled.div`
@@ -67,6 +69,7 @@ const StepperValue = styled.div`
   font-size: 32px;
   width: 40px;
   text-align: center;
+  color: #2e2013;
 `;
 
 const StepperHint = styled.div`
@@ -83,6 +86,7 @@ const ToggleRow = styled.div`
 const ToggleTitle = styled.div`
   font-weight: 700;
   font-size: 15px;
+  color: #2e2013;
 `;
 
 const ToggleDesc = styled.div`
@@ -139,7 +143,7 @@ const ErrorText = styled.div`
 
 const RULESET_OPTIONS = [
   { value: 'classic', label: 'Classic' },
-  { value: 'rumor', label: 'Rumor Variant' },
+  { value: 'extended', label: 'Extended (Spy & Chancellor)' },
 ];
 
 export function CreateRoomContainer() {
@@ -152,6 +156,17 @@ export function CreateRoomContainer() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const createStarted = useRef(false);
+
+  // Classic's 16-card deck can't seat more than 4 — force-switch to Extended
+  // once the host goes above that, but never force back to Classic when
+  // they drop back down (a host who deliberately opted into Extended at a
+  // smaller player count gets to keep that choice — that's the "some
+  // customization" on top of the player-count-based default).
+  useEffect(() => {
+    if (playerCount > 4 && ruleset !== 'extended') setRuleset('extended');
+  }, [playerCount, ruleset]);
+
+  const rulesetOptions = playerCount > 4 ? RULESET_OPTIONS.filter((o) => o.value !== 'classic') : RULESET_OPTIONS;
 
   // Create the room doc as soon as this screen opens (with default settings)
   // so the invite code is real and shareable immediately; final player
@@ -205,14 +220,19 @@ export function CreateRoomContainer() {
             <StepperRow>
               <StepperButton onClick={() => setPlayerCount((c) => Math.max(2, c - 1))}>–</StepperButton>
               <StepperValue>{playerCount}</StepperValue>
-              <StepperButton onClick={() => setPlayerCount((c) => Math.min(8, c + 1))}>+</StepperButton>
-              <StepperHint>players (2–8)</StepperHint>
+              <StepperButton onClick={() => setPlayerCount((c) => Math.min(6, c + 1))}>+</StepperButton>
+              <StepperHint>players (2–6)</StepperHint>
             </StepperRow>
           </div>
 
           <div>
             <SectionLabel>Ruleset</SectionLabel>
-            <SegmentedControl options={RULESET_OPTIONS} value={ruleset} onChange={setRuleset} />
+            <SegmentedControl options={rulesetOptions} value={ruleset} onChange={setRuleset} />
+            {playerCount > 4 && (
+              <StepperHint style={{ marginTop: 8 }}>
+                5-6 player games always use the Extended deck (adds Spy &amp; Chancellor).
+              </StepperHint>
+            )}
           </div>
 
           <ToggleRow>
@@ -227,7 +247,12 @@ export function CreateRoomContainer() {
             <SectionLabel>Invite code</SectionLabel>
             <InviteRow>
               <Code>{room?.code || '····'}</Code>
-              <SmallButton $bg="#E3A73E" disabled={!room} onClick={() => navigator.clipboard?.writeText(room.code)}>
+              <SmallButton
+                $bg="#E3A73E"
+                $color="#2E2013"
+                disabled={!room}
+                onClick={() => navigator.clipboard?.writeText(room.code)}
+              >
                 Copy
               </SmallButton>
               <SmallButton $bg="#7C8C4A" $color="#F5ECD8" disabled={!room}>

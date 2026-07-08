@@ -19,8 +19,8 @@ const TopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 18px 32px;
-  border-bottom: 1px solid rgba(46, 32, 19, 0.12);
-  background: ${({ theme }) => theme.colors.surface};
+  border-bottom: 1px solid rgba(245, 230, 199, 0.12);
+  background: #2e2013;
   flex-wrap: wrap;
   gap: 16px;
   position: relative;
@@ -40,7 +40,7 @@ const Links = styled.div`
 const StyledLink = styled(NavLink)`
   font-size: 15px;
   font-weight: 500;
-  color: rgba(46, 32, 19, 0.55);
+  color: rgba(245, 230, 199, 0.55);
   text-decoration: none;
   cursor: pointer;
   border-bottom: 3px solid transparent;
@@ -48,7 +48,7 @@ const StyledLink = styled(NavLink)`
 
   &.active {
     font-weight: 800;
-    color: ${({ theme }) => theme.colors.ink};
+    color: #f5e6c7;
     border-bottom-color: ${({ theme }) => theme.colors.terracotta};
   }
 `;
@@ -61,8 +61,8 @@ const BottomBar = styled.div`
     justify-content: space-around;
     align-items: center;
     padding: 10px 0 calc(16px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid rgba(46, 32, 19, 0.1);
-    background: ${({ theme }) => theme.colors.surface};
+    border-top: 1px solid rgba(245, 230, 199, 0.1);
+    background: #2e2013;
     position: fixed;
     left: 0;
     right: 0;
@@ -78,13 +78,13 @@ const TabItem = styled(NavLink)`
   gap: 3px;
   cursor: pointer;
   text-decoration: none;
-  color: rgba(46, 32, 19, 0.55);
+  color: rgba(245, 230, 199, 0.55);
 
   .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(46, 32, 19, 0.55);
+    background: rgba(245, 230, 199, 0.55);
   }
 
   span {
@@ -93,7 +93,7 @@ const TabItem = styled(NavLink)`
   }
 
   &.active {
-    color: ${({ theme }) => theme.colors.ink};
+    color: #f5e6c7;
 
     .dot {
       background: ${({ theme }) => theme.colors.terracotta};
@@ -125,6 +125,7 @@ export function NavBar() {
             size={38}
             color={avatarColor}
             imageUrl={profile?.avatarUrl}
+            borderColor="rgba(245, 230, 199, 0.35)"
             onClick={() => navigate('/profile')}
           />
         </Links>

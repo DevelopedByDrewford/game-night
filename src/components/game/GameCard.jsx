@@ -37,6 +37,7 @@ const Thumb = styled.div`
 const Name = styled.div`
   font-weight: 700;
   font-size: 16px;
+  color: #2e2013;
 `;
 
 const Sub = styled.div`
@@ -73,7 +74,7 @@ const Badge = styled.div`
   padding: 5px 12px;
   border-radius: 14px;
   background: ${({ $filled, theme }) => ($filled ? theme.colors.terracotta : 'transparent')};
-  color: ${({ $filled, theme }) => ($filled ? theme.colors.surface : theme.colors.ink)};
+  color: ${({ $filled, theme }) => ($filled ? theme.colors.surface : '#2e2013')};
   border: 1.5px solid ${({ theme }) => theme.colors.border};
 `;
 

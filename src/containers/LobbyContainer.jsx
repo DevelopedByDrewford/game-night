@@ -28,12 +28,12 @@ const Code = styled.div`
   font-family: ${({ theme }) => theme.fonts.mono};
   font-size: 16px;
   letter-spacing: 3px;
-  color: rgba(46, 32, 19, 0.55);
+  color: ${({ theme }) => theme.colors.inkFaint};
 `;
 
 const Subtitle = styled.div`
   font-size: 15px;
-  color: rgba(46, 32, 19, 0.6);
+  color: ${({ theme }) => theme.colors.inkFaint};
   margin-bottom: 26px;
 `;
 
@@ -47,7 +47,7 @@ const Seats = styled.div`
 const HelperText = styled.div`
   text-align: center;
   font-size: 12px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
   margin-top: 10px;
 `;
 

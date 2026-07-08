@@ -9,3 +9,4 @@ const handlers = createHandlers({ db, FieldValue });
 
 export const startGame = onCall(handlers.startGame);
 export const playCard = onCall(handlers.playCard);
+export const resolveChancellor = onCall(handlers.resolveChancellor);

@@ -55,6 +55,7 @@ const Name = styled.div`
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 38px;
   letter-spacing: -1px;
+  color: #2e2013;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 `;
 
@@ -77,7 +78,7 @@ const Location = styled.div`
 
 const Bio = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.75);
+  color: ${({ theme }) => theme.colors.ink};
   line-height: 1.5;
   margin-bottom: 16px;
   white-space: pre-wrap;
@@ -133,6 +134,7 @@ const StatThumb = styled.div`
 const StatName = styled.div`
   font-weight: 700;
   font-size: 16px;
+  color: #2e2013;
 `;
 
 const StatDetail = styled.div`
@@ -144,7 +146,7 @@ const StatDetail = styled.div`
 
 const StatusText = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 const IdRow = styled.div`
@@ -153,7 +155,7 @@ const IdRow = styled.div`
   gap: 10px;
   margin-bottom: 30px;
   font-size: 12px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 const IdValue = styled.span`
@@ -205,6 +207,7 @@ const FieldRow = styled.div`
 const FieldLabel = styled.label`
   font-weight: 700;
   font-size: 13px;
+  color: #2e2013;
 `;
 
 const inputStyles = `

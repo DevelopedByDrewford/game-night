@@ -14,6 +14,10 @@ vi.mock('../hooks/useRoomLog.js', () => ({
 }));
 vi.mock('../utils/rooms.js', () => ({ endGameEarly: vi.fn() }));
 vi.mock('../utils/gameplay.js', () => ({ playCard: vi.fn().mockResolvedValue({ success: true, peekedCard: null }) }));
+// No real card art in the test environment — keep PlayingCard on its
+// text-label fallback so these interaction assertions (getByText('Guard'),
+// etc.) stay meaningful regardless of what art exists on disk.
+vi.mock('../utils/cardArt.js', () => ({ frontImageFor: () => undefined, backImageFor: () => undefined }));
 
 const fakeState = {
   turnOrder: ['me', 'opp'],

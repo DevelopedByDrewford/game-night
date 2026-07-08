@@ -9,3 +9,12 @@ export async function playCard({ roomId, cardId, targetUid = null, guessCardId =
   const result = await call({ roomId, cardId, targetUid, guessCardId });
   return result.data;
 }
+
+// Finishes a Chancellor play: playCard('chancellor') leaves the game paused
+// (state.phase === 'chancellorPending') with the caller's hand temporarily
+// holding the drawn cards — this picks which one to keep.
+export async function resolveChancellor({ roomId, keepCardId }) {
+  const call = httpsCallable(functions, 'resolveChancellor');
+  const result = await call({ roomId, keepCardId });
+  return result.data;
+}

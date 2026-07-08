@@ -7,6 +7,7 @@ import {
   applyCardEffect,
   pickRoundWinners,
   nextActiveUid,
+  spyBonusUid,
 } from './rules.js';
 
 describe('dealSetup', () => {
@@ -154,6 +155,49 @@ describe('applyCardEffect', () => {
     const hands = { a: ['princess', 'guard'] };
     const result = applyCardEffect({ cardId: 'princess', callerUid: 'a', hands });
     expect(result.eliminatedUids).toEqual(['a']);
+  });
+
+  it('spy: no effect on play (bonus token is resolved separately at round end)', () => {
+    const hands = { a: ['spy', 'guard'] };
+    const result = applyCardEffect({ cardId: 'spy', callerUid: 'a', hands });
+    expect(result.eliminatedUids).toEqual([]);
+    expect(result.protectUid).toBeNull();
+    expect(result.newHands.a).toEqual(['guard']);
+  });
+
+  it('chancellor: no immediate effect here (draw/choose is handled by handlers.js)', () => {
+    const hands = { a: ['chancellor', 'guard'] };
+    const result = applyCardEffect({ cardId: 'chancellor', callerUid: 'a', hands });
+    expect(result.eliminatedUids).toEqual([]);
+    expect(result.newHands.a).toEqual(['guard']);
+  });
+});
+
+describe('spyBonusUid', () => {
+  it('returns the sole alive uid whose discard pile contains a spy', () => {
+    const discardPiles = { a: ['guard', 'spy'], b: ['priest'] };
+    expect(spyBonusUid(['a', 'b'], discardPiles)).toBe('a');
+  });
+
+  it('returns null when no one discarded a spy', () => {
+    const discardPiles = { a: ['guard'], b: ['priest'] };
+    expect(spyBonusUid(['a', 'b'], discardPiles)).toBeNull();
+  });
+
+  it('returns null when two different alive players each discarded a spy', () => {
+    const discardPiles = { a: ['spy'], b: ['spy'] };
+    expect(spyBonusUid(['a', 'b'], discardPiles)).toBeNull();
+  });
+
+  it('dedupes by uid — discarding two spies yourself still qualifies once', () => {
+    const discardPiles = { a: ['spy', 'guard', 'spy'], b: ['priest'] };
+    expect(spyBonusUid(['a', 'b'], discardPiles)).toBe('a');
+  });
+
+  it('only counts players still alive at round end', () => {
+    const discardPiles = { a: ['spy'], b: ['priest'] };
+    // 'a' was eliminated earlier and isn't in the alive list anymore.
+    expect(spyBonusUid(['b'], discardPiles)).toBeNull();
   });
 });
 

@@ -3,7 +3,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from './firebase.js';
 import { generateInviteCode } from './inviteCode.js';
 
-const MAX_PLAYERS = 8;
+const MAX_PLAYERS = 6;
 
 // Room create/join/leave/end involve no hidden information, so they run as
 // plain client-side Firestore transactions here rather than Cloud Functions

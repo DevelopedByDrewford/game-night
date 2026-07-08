@@ -36,6 +36,7 @@ const Name = styled.div`
   font-weight: 800;
   font-size: 18px;
   margin-bottom: 2px;
+  color: #2e2013;
 `;
 
 const Range = styled.div`

@@ -22,7 +22,7 @@ const Title = styled.div`
 
 const Subtitle = styled.div`
   font-size: 15px;
-  color: rgba(46, 32, 19, 0.6);
+  color: ${({ theme }) => theme.colors.inkFaint};
 `;
 
 const FollowForm = styled.form`
@@ -38,7 +38,7 @@ const SearchInput = styled.input`
   padding: 12px 18px;
   font-size: 14px;
   font-family: inherit;
-  color: ${({ theme }) => theme.colors.ink};
+  color: #2e2013;
   background: ${({ theme }) => theme.colors.surface};
 
   &::placeholder {
@@ -48,7 +48,7 @@ const SearchInput = styled.input`
 
 const FollowHint = styled.div`
   font-size: 12px;
-  color: rgba(46, 32, 19, 0.45);
+  color: ${({ theme }) => theme.colors.inkFainter};
   margin-bottom: 22px;
 `;
 
@@ -81,6 +81,7 @@ const Info = styled.div`
 const NameText = styled.div`
   font-weight: 700;
   font-size: 15px;
+  color: #2e2013;
 `;
 
 const StatusText = styled.div`
@@ -96,12 +97,13 @@ const InviteButton = styled.button`
   font-weight: 700;
   cursor: pointer;
   background: transparent;
+  color: #2e2013;
   font-family: inherit;
 `;
 
 const EmptyText = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 export function FriendsContainer() {

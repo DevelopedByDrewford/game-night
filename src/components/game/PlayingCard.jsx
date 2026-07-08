@@ -23,6 +23,7 @@ const Label = styled.div`
   font-weight: 800;
   font-size: 13px;
   background: ${({ theme }) => theme.colors.surface};
+  color: #2e2013;
   border: 1.5px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   padding: 2px 8px;

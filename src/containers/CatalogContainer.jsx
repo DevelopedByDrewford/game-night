@@ -16,7 +16,7 @@ const Title = styled.div`
 
 const Subtitle = styled.div`
   font-size: 15px;
-  color: rgba(46, 32, 19, 0.6);
+  color: ${({ theme }) => theme.colors.inkFaint};
 `;
 
 const Grid = styled.div`
@@ -27,7 +27,7 @@ const Grid = styled.div`
 
 const StatusText = styled.div`
   font-size: 14px;
-  color: rgba(46, 32, 19, 0.5);
+  color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
 function playerRange(game) {
