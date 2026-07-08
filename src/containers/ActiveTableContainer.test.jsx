@@ -18,6 +18,11 @@ vi.mock('../utils/gameplay.js', () => ({ playCard: vi.fn().mockResolvedValue({ s
 // text-label fallback so these interaction assertions (getByText('Guard'),
 // etc.) stay meaningful regardless of what art exists on disk.
 vi.mock('../utils/cardArt.js', () => ({ frontImageFor: () => undefined, backImageFor: () => undefined }));
+// The rules reference panel renders every card name again (both its desktop
+// and mobile variants, since jsdom doesn't evaluate @media display:none) —
+// irrelevant to these interaction tests and would collide with getByText
+// queries for hand cards, so it's mocked out here.
+vi.mock('../components/game/RulesReferencePanel.jsx', () => ({ RulesReferencePanel: () => null }));
 
 const fakeState = {
   turnOrder: ['me', 'opp'],
@@ -73,9 +78,29 @@ describe('ActiveTableContainer', () => {
     expect(screen.getByText('▶ Your turn')).toBeInTheDocument();
   });
 
-  it('plays an untargeted card (Handmaid) immediately, no picker shown', async () => {
+  it('opens a preview modal with the card name, description, and a Play button on click', async () => {
     renderTable();
     await userEvent.click(screen.getByText('Handmaid'));
+
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
+    expect(screen.getByText(/can't be targeted/i)).toBeInTheDocument();
+    expect(playCard).not.toHaveBeenCalled();
+  });
+
+  it('Cancel in the preview modal closes it without playing', async () => {
+    renderTable();
+    await userEvent.click(screen.getByText('Handmaid'));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('button', { name: 'Play' })).not.toBeInTheDocument();
+    expect(playCard).not.toHaveBeenCalled();
+  });
+
+  it('plays an untargeted card (Handmaid) after confirming in the modal', async () => {
+    renderTable();
+    await userEvent.click(screen.getByText('Handmaid'));
+    await userEvent.click(screen.getByRole('button', { name: 'Play' }));
+
     expect(playCard).toHaveBeenCalledWith({
       roomId: 'room1',
       cardId: 'handmaid',
@@ -84,9 +109,10 @@ describe('ActiveTableContainer', () => {
     });
   });
 
-  it('walks Guard through target + guess pickers before submitting', async () => {
+  it('walks Guard through the preview modal, then target + guess pickers before submitting', async () => {
     renderTable();
     await userEvent.click(screen.getByText('Guard'));
+    await userEvent.click(screen.getByRole('button', { name: 'Play' }));
 
     expect(screen.getByText('Choose a target for Guard')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Opp' }));

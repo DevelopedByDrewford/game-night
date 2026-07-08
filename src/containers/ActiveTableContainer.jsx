@@ -5,7 +5,9 @@ import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { OpponentSeat } from '../components/game/OpponentSeat.jsx';
 import { PlayingCard } from '../components/game/PlayingCard.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
+import { RulesReferencePanel } from '../components/game/RulesReferencePanel.jsx';
 import { Button } from '../components/ui/Button.jsx';
+import { Modal } from '../components/ui/Modal.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useRoomState } from '../hooks/useRoomState.js';
 import { useHand } from '../hooks/useHand.js';
@@ -14,7 +16,7 @@ import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
 import { endGameEarly } from '../utils/rooms.js';
 import { playCard, resolveChancellor } from '../utils/gameplay.js';
 import { colorForId } from '../utils/colors.js';
-import { CARD_DEFS, TARGETED_CARDS, cardName } from '../utils/cards.js';
+import { CARD_DEFS, TARGETED_CARDS, cardName, cardDescription } from '../utils/cards.js';
 import { frontImageFor, backImageFor } from '../utils/cardArt.js';
 
 const Layout = styled.div`
@@ -100,14 +102,6 @@ const HandCards = styled.div`
   gap: 12px;
 `;
 
-const PickerPanel = styled.div`
-  margin-top: 14px;
-  padding: 16px;
-  border: 1.5px dashed ${({ theme }) => theme.colors.border};
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.surface};
-`;
-
 const PickerTitle = styled.div`
   font-weight: 700;
   font-size: 14px;
@@ -120,6 +114,32 @@ const PickerRow = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
+`;
+
+const ModalCardPreview = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+`;
+
+const ModalCardName = styled.div`
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 24px;
+  color: #2e2013;
+  margin-bottom: 8px;
+`;
+
+const ModalCardDescription = styled.div`
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(46, 32, 19, 0.75);
+  margin-bottom: 22px;
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: center;
 `;
 
 const MessageText = styled.div`
@@ -141,7 +161,8 @@ export function ActiveTableContainer({ room }) {
   const { entries } = useRoomLog(room.id);
   const presence = useRoomPresenceMap(room.id);
 
-  const [pending, setPending] = useState(null); // { cardId, targetUid? }
+  const [selectedCard, setSelectedCard] = useState(null); // cardId clicked in hand, modal open
+  const [pending, setPending] = useState(null); // { cardId, targetUid? } — set once "Play" is confirmed
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null); // { text, error }
   const [ending, setEnding] = useState(false);
@@ -184,12 +205,27 @@ export function ActiveTableContainer({ room }) {
     } finally {
       setSubmitting(false);
       setPending(null);
+      setSelectedCard(null);
     }
   }
 
+  // Clicking a hand card just opens the preview modal — playing it (and,
+  // for targeted cards, picking a target) happens from there.
   function handleCardClick(cardId) {
-    if (!myTurn || hand.length < 2 || submitting || pending) return;
+    if (!myTurn || hand.length < 2 || submitting || selectedCard) return;
+    setSelectedCard(cardId);
+  }
 
+  function handleCancelSelection() {
+    setSelectedCard(null);
+    setPending(null);
+  }
+
+  // "Play" in the modal: untargeted cards (or targeted cards with no legal
+  // target left, i.e. a fizzle) submit immediately; otherwise the modal
+  // switches to the target picker.
+  function handlePlaySelected() {
+    const cardId = selectedCard;
     if (!TARGETED_CARDS.includes(cardId)) {
       submitPlay({ cardId, targetUid: null, guessCardId: null });
       return;
@@ -317,7 +353,7 @@ export function ActiveTableContainer({ room }) {
                   onClick={() => (myChancellorPending ? !submitting && handleKeepCard(cardId) : handleCardClick(cardId))}
                   style={{
                     cursor:
-                      (myChancellorPending && !submitting) || (myTurn && !submitting && !pending)
+                      (myChancellorPending && !submitting) || (myTurn && !submitting && !selectedCard)
                         ? 'pointer'
                         : 'default',
                   }}
@@ -325,46 +361,73 @@ export function ActiveTableContainer({ room }) {
               ))}
             </HandCards>
 
-            {pending && !pending.targetUid && (
-              <PickerPanel>
-                <PickerTitle>Choose a target for {cardName(pending.cardId)}</PickerTitle>
-                <PickerRow>
-                  {legalTargetsFor(pending.cardId).map((uid) => (
-                    <Button key={uid} $variant="outline" onClick={() => handleTargetPick(uid)}>
-                      {uid === user.uid ? 'Yourself' : nameForUid(uid)}
-                    </Button>
-                  ))}
-                </PickerRow>
-                <Button $variant="outline" onClick={() => setPending(null)}>
-                  Cancel
-                </Button>
-              </PickerPanel>
-            )}
-
-            {pending?.cardId === 'guard' && pending.targetUid && (
-              <PickerPanel>
-                <PickerTitle>Guess {nameForUid(pending.targetUid)}'s card</PickerTitle>
-                <PickerRow>
-                  {Object.keys(CARD_DEFS)
-                    .filter((id) => id !== 'guard')
-                    .map((id) => (
-                      <Button key={id} $variant="outline" onClick={() => handleGuessPick(id)}>
-                        {cardName(id)}
-                      </Button>
-                    ))}
-                </PickerRow>
-                <Button $variant="outline" onClick={() => setPending(null)}>
-                  Cancel
-                </Button>
-              </PickerPanel>
-            )}
-
             {message && <MessageText $error={message.error}>{message.text}</MessageText>}
           </HandPanel>
         </TableColumn>
 
         <ActionLogPanel entries={entries.map((e) => e.message)} />
+        <RulesReferencePanel ruleset={state.ruleset} />
       </Layout>
+
+      {selectedCard && !pending && (
+        <Modal onClose={handleCancelSelection}>
+          <ModalCardPreview>
+            <PlayingCard
+              width={170}
+              height={238}
+              radius={16}
+              stripeSize={12}
+              stripe="#C8592F"
+              label={cardName(selectedCard)}
+              frontImageUrl={frontImageFor(selectedCard)}
+            />
+          </ModalCardPreview>
+          <ModalCardName>{cardName(selectedCard)}</ModalCardName>
+          <ModalCardDescription>{cardDescription(selectedCard)}</ModalCardDescription>
+          <ModalActions>
+            <Button onClick={handlePlaySelected} disabled={submitting}>
+              Play
+            </Button>
+            <Button $variant="outline" onClick={handleCancelSelection} disabled={submitting}>
+              Cancel
+            </Button>
+          </ModalActions>
+        </Modal>
+      )}
+
+      {pending && !pending.targetUid && (
+        <Modal onClose={handleCancelSelection}>
+          <PickerTitle>Choose a target for {cardName(pending.cardId)}</PickerTitle>
+          <PickerRow>
+            {legalTargetsFor(pending.cardId).map((uid) => (
+              <Button key={uid} $variant="outline" onClick={() => handleTargetPick(uid)}>
+                {uid === user.uid ? 'Yourself' : nameForUid(uid)}
+              </Button>
+            ))}
+          </PickerRow>
+          <Button $variant="outline" onClick={handleCancelSelection}>
+            Cancel
+          </Button>
+        </Modal>
+      )}
+
+      {pending?.cardId === 'guard' && pending.targetUid && (
+        <Modal onClose={handleCancelSelection}>
+          <PickerTitle>Guess {nameForUid(pending.targetUid)}'s card</PickerTitle>
+          <PickerRow>
+            {Object.keys(CARD_DEFS)
+              .filter((id) => id !== 'guard')
+              .map((id) => (
+                <Button key={id} $variant="outline" onClick={() => handleGuessPick(id)}>
+                  {cardName(id)}
+                </Button>
+              ))}
+          </PickerRow>
+          <Button $variant="outline" onClick={handleCancelSelection}>
+            Cancel
+          </Button>
+        </Modal>
+      )}
     </>
   );
 }
