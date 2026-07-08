@@ -5,8 +5,16 @@ import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { OpponentSeat } from '../components/game/OpponentSeat.jsx';
 import { PlayingCard } from '../components/game/PlayingCard.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
+import { Button } from '../components/ui/Button.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useRoomState } from '../hooks/useRoomState.js';
+import { useHand } from '../hooks/useHand.js';
+import { useRoomLog } from '../hooks/useRoomLog.js';
+import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
 import { endGameEarly } from '../utils/rooms.js';
+import { playCard } from '../utils/gameplay.js';
+import { colorForId } from '../utils/colors.js';
+import { CARD_DEFS, TARGETED_CARDS, cardName } from '../utils/cards.js';
 
 const Layout = styled.div`
   max-width: ${({ theme }) => theme.maxWidth.grid};
@@ -64,6 +72,12 @@ const DeckCount = styled.div`
   color: rgba(46, 32, 19, 0.6);
 `;
 
+const TokenCount = styled.div`
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(46, 32, 19, 0.7);
+`;
+
 const HandPanel = styled.div`
   border: 3px solid ${({ theme }) => theme.colors.terracotta};
   background: #fdf0e5;
@@ -85,34 +99,120 @@ const HandCards = styled.div`
   gap: 12px;
 `;
 
-// Mock table state — real gameplay (dealing hands, resolving card effects) is
-// a Phase 1 Cloud Functions concern; this screen renders live once startGame/
-// playCard exist. `status: 'active'` today just displays this static state.
-const TABLE_OPPONENTS = [
-  { name: 'Sam', color: '#7C8C4A', online: true, statusLabel: 'Online', discardCount: 2, isCurrentTurn: false },
-  { name: 'Priya', color: '#A25A4A', online: false, statusLabel: 'Offline', discardCount: 1, isCurrentTurn: false },
-  { name: 'Alex', color: '#E3A73E', online: true, statusLabel: 'Online', discardCount: 0, isCurrentTurn: true },
-];
+const PickerPanel = styled.div`
+  margin-top: 14px;
+  padding: 16px;
+  border: 1.5px dashed ${({ theme }) => theme.colors.border};
+  border-radius: 14px;
+  background: ${({ theme }) => theme.colors.surface};
+`;
 
-const ACTION_LOG = [
-  'Sam played Guard, guessed Priya has a Baron. Wrong.',
-  'Priya discarded Handmaid — protected until next turn.',
-  'You drew a card.',
-  'Alex played Prince — Sam discards and draws new.',
-  'Sam is out of the round.',
-  'New round dealt.',
-];
+const PickerTitle = styled.div`
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: #2e2013;
+`;
 
-const YOUR_HAND = [
-  { name: 'Guard', stripe: '#C8592F' },
-  { name: 'Priest', stripe: '#7C8C4A' },
-];
+const PickerRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+`;
+
+const MessageText = styled.div`
+  font-size: 13px;
+  margin-top: 10px;
+  color: ${({ theme, $error }) => ($error ? theme.colors.terracotta : theme.colors.avocado)};
+`;
+
+const StatusText = styled.div`
+  font-size: 14px;
+  color: rgba(46, 32, 19, 0.5);
+`;
 
 export function ActiveTableContainer({ room }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { state, loading: stateLoading } = useRoomState(room.id);
+  const { hand, loading: handLoading } = useHand(room.id, user.uid);
+  const { entries } = useRoomLog(room.id);
+  const presence = useRoomPresenceMap(room.id);
+
+  const [pending, setPending] = useState(null); // { cardId, targetUid? }
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState(null); // { text, error }
   const [ending, setEnding] = useState(false);
+
   const isHost = user?.uid === room.hostUid;
+
+  if (stateLoading || handLoading || !state) {
+    return (
+      <>
+        <RoomChromeHeader title={`Room ${room.code}`} />
+        <StatusText>Loading table…</StatusText>
+      </>
+    );
+  }
+
+  const myTurn = state.turnUid === user.uid && state.phase === 'playing';
+  const nameForUid = (uid) => room.players.find((p) => p.uid === uid)?.displayName || 'A player';
+
+  function legalTargetsFor(cardId) {
+    const aliveUids = state.turnOrder.filter((u) => !state.eliminated[u]);
+    const protectedUids = new Set(aliveUids.filter((u) => state.protected[u]));
+    const others = aliveUids.filter((u) => u !== user.uid && !protectedUids.has(u));
+    if (cardId === 'prince') return [...others, user.uid];
+    if (TARGETED_CARDS.includes(cardId)) return others;
+    return [];
+  }
+
+  async function submitPlay(args) {
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const result = await playCard({ roomId: room.id, ...args });
+      if (result.peekedCard) {
+        setMessage({ text: `You saw: ${cardName(result.peekedCard)}`, error: false });
+      }
+    } catch (err) {
+      console.error('[ActiveTableContainer] playCard failed', err);
+      setMessage({ text: err.message || "Couldn't play that card — try again.", error: true });
+    } finally {
+      setSubmitting(false);
+      setPending(null);
+    }
+  }
+
+  function handleCardClick(cardId) {
+    if (!myTurn || hand.length < 2 || submitting || pending) return;
+
+    if (!TARGETED_CARDS.includes(cardId)) {
+      submitPlay({ cardId, targetUid: null, guessCardId: null });
+      return;
+    }
+
+    const targets = legalTargetsFor(cardId);
+    if (targets.length === 0) {
+      submitPlay({ cardId, targetUid: null, guessCardId: null });
+      return;
+    }
+
+    setPending({ cardId, targetUid: null });
+  }
+
+  function handleTargetPick(targetUid) {
+    if (pending.cardId === 'guard') {
+      setPending({ ...pending, targetUid });
+    } else {
+      submitPlay({ cardId: pending.cardId, targetUid, guessCardId: null });
+    }
+  }
+
+  function handleGuessPick(guessCardId) {
+    submitPlay({ cardId: 'guard', targetUid: pending.targetUid, guessCardId });
+  }
 
   async function handleEndGameEarly() {
     setEnding(true);
@@ -125,6 +225,26 @@ export function ActiveTableContainer({ room }) {
     }
   }
 
+  const opponents = room.players
+    .filter((p) => p.uid !== user.uid)
+    .map((p) => {
+      const eliminated = Boolean(state.eliminated[p.uid]);
+      const protectedFlag = Boolean(state.protected[p.uid]);
+      const online = Boolean(presence[p.uid]);
+      const tokens = state.tokens[p.uid] || 0;
+      const statusLabel = eliminated ? 'Eliminated' : protectedFlag ? 'Protected' : online ? 'Online' : 'Offline';
+      return {
+        name: p.displayName,
+        color: colorForId(p.uid),
+        online,
+        statusLabel: `${statusLabel} · ${tokens} tok`,
+        discardCount: (state.discardPiles[p.uid] || []).length,
+        isCurrentTurn: state.turnUid === p.uid,
+      };
+    });
+
+  const myTokens = state.tokens[user.uid] || 0;
+
   return (
     <>
       <RoomChromeHeader
@@ -135,30 +255,75 @@ export function ActiveTableContainer({ room }) {
       <Layout>
         <TableColumn>
           <Opponents>
-            {TABLE_OPPONENTS.map((op) => (
+            {opponents.map((op) => (
               <OpponentSeat key={op.name} {...op} />
             ))}
           </Opponents>
 
           <TurnArea>
-            <TurnIndicator>▶ Alex's turn</TurnIndicator>
+            <TurnIndicator>{myTurn ? '▶ Your turn' : `▶ ${nameForUid(state.turnUid)}'s turn`}</TurnIndicator>
             <DeckRow>
               <PlayingCard width={44} height={60} radius={8} stripe="#7C8C4A" stripeSize={6} />
-              <DeckCount>Deck: 9 left</DeckCount>
+              <DeckCount>Deck: {state.deckCount} left</DeckCount>
             </DeckRow>
+            <TokenCount>
+              Round {state.roundNumber} · You: {myTokens}/{state.tokensToWin} tokens
+            </TokenCount>
           </TurnArea>
 
           <HandPanel>
             <HandLabel>YOUR HAND — PRIVATE</HandLabel>
             <HandCards>
-              {YOUR_HAND.map((card) => (
-                <PlayingCard key={card.name} stripe={card.stripe} label={card.name} />
+              {hand.map((cardId, i) => (
+                <PlayingCard
+                  key={`${cardId}-${i}`}
+                  stripe="#C8592F"
+                  label={cardName(cardId)}
+                  onClick={() => handleCardClick(cardId)}
+                  style={{ cursor: myTurn && !submitting && !pending ? 'pointer' : 'default' }}
+                />
               ))}
             </HandCards>
+
+            {pending && !pending.targetUid && (
+              <PickerPanel>
+                <PickerTitle>Choose a target for {cardName(pending.cardId)}</PickerTitle>
+                <PickerRow>
+                  {legalTargetsFor(pending.cardId).map((uid) => (
+                    <Button key={uid} $variant="outline" onClick={() => handleTargetPick(uid)}>
+                      {uid === user.uid ? 'Yourself' : nameForUid(uid)}
+                    </Button>
+                  ))}
+                </PickerRow>
+                <Button $variant="outline" onClick={() => setPending(null)}>
+                  Cancel
+                </Button>
+              </PickerPanel>
+            )}
+
+            {pending?.cardId === 'guard' && pending.targetUid && (
+              <PickerPanel>
+                <PickerTitle>Guess {nameForUid(pending.targetUid)}'s card</PickerTitle>
+                <PickerRow>
+                  {Object.keys(CARD_DEFS)
+                    .filter((id) => id !== 'guard')
+                    .map((id) => (
+                      <Button key={id} $variant="outline" onClick={() => handleGuessPick(id)}>
+                        {cardName(id)}
+                      </Button>
+                    ))}
+                </PickerRow>
+                <Button $variant="outline" onClick={() => setPending(null)}>
+                  Cancel
+                </Button>
+              </PickerPanel>
+            )}
+
+            {message && <MessageText $error={message.error}>{message.text}</MessageText>}
           </HandPanel>
         </TableColumn>
 
-        <ActionLogPanel entries={ACTION_LOG} />
+        <ActionLogPanel entries={entries.map((e) => e.message)} />
       </Layout>
     </>
   );

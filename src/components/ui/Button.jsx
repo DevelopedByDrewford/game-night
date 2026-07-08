@@ -20,8 +20,7 @@ export const Button = styled.button`
 
   background: ${({ theme, $variant }) =>
     $variant === 'outline' ? theme.colors.surface : theme.colors.terracotta};
-  color: ${({ theme, $variant }) =>
-    $variant === 'outline' ? theme.colors.ink : theme.colors.surface};
+  color: ${({ theme, $variant }) => ($variant === 'outline' ? '#2E2013' : theme.colors.surface)};
   box-shadow: ${({ theme, $variant }) => ($variant === 'outline' ? 'none' : theme.shadows.button)};
 
   &:disabled {

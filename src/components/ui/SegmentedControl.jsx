@@ -15,7 +15,7 @@ const Option = styled.div`
   font-weight: 700;
   font-size: 14px;
   background: ${({ $active, theme }) => ($active ? theme.colors.terracotta : theme.colors.surface)};
-  color: ${({ $active, theme }) => ($active ? theme.colors.surface : theme.colors.ink)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.surface : '#2E2013')};
 `;
 
 export function SegmentedControl({ options, value, onChange }) {

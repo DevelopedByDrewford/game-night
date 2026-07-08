@@ -62,6 +62,16 @@ service cloud.firestore {
           request.auth.uid in get(/databases/$(database)/documents/gameRooms/$(roomId)).data.playerUids;
         allow write: if false;
       }
+
+      // Holds the actual shuffled draw pile order — unlike state/**, this is
+      // never readable by clients (even players in the room), since knowing
+      // it would reveal everyone's future draws. Only Cloud Functions (Admin
+      // SDK, which bypasses rules entirely) ever touch it. This block is
+      // technically redundant with Firestore's default-deny for unmatched
+      // paths, but written explicitly so the intent isn't implicit.
+      match /secret/{document=**} {
+        allow read, write: if false;
+      }
     }
   }
 }

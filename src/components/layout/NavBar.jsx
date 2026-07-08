@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/catalog', label: 'Catalog' },
   { to: '/friends', label: 'Friends' },
   { to: '/profile', label: 'Profile' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 const TopBar = styled.div`

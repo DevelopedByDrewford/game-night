@@ -1,10 +1,11 @@
 import { ThemeProvider } from 'styled-components';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { theme } from './styles/theme.js';
+import { lightTheme, darkTheme } from './styles/theme.js';
 import { GlobalStyle } from './styles/GlobalStyle.js';
 import { Background } from './components/layout/Background.jsx';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import { usePresence } from './hooks/usePresence.js';
+import { useProfile } from './hooks/useProfile.js';
 import { ProtectedRoute } from './routes/ProtectedRoute.jsx';
 import { MainLayout } from './routes/MainLayout.jsx';
 import { LoginContainer } from './containers/LoginContainer.jsx';
@@ -12,6 +13,7 @@ import { DashboardContainer } from './containers/DashboardContainer.jsx';
 import { CatalogContainer } from './containers/CatalogContainer.jsx';
 import { FriendsContainer } from './containers/FriendsContainer.jsx';
 import { ProfileContainer } from './containers/ProfileContainer.jsx';
+import { SettingsContainer } from './containers/SettingsContainer.jsx';
 import { CreateRoomContainer } from './containers/CreateRoomContainer.jsx';
 import { RoomContainer } from './containers/RoomContainer.jsx';
 
@@ -30,6 +32,7 @@ function AppShell() {
             <Route path="/catalog" element={<CatalogContainer />} />
             <Route path="/friends" element={<FriendsContainer />} />
             <Route path="/profile" element={<ProfileContainer />} />
+            <Route path="/settings" element={<SettingsContainer />} />
           </Route>
 
           <Route path="/rooms/new" element={<CreateRoomContainer />} />
@@ -43,14 +46,23 @@ function AppShell() {
   );
 }
 
+function ThemedApp() {
+  const { profile } = useProfile();
+  const selectedTheme = profile?.themeMode === 'light' ? lightTheme : darkTheme;
+
+  return (
+    <ThemeProvider theme={selectedTheme}>
+      <GlobalStyle />
+      <AppShell />
+    </ThemeProvider>
+  );
+}
+
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyle />
-      <AuthProvider>
-        <AppShell />
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemedApp />
+    </AuthProvider>
   );
 }
 

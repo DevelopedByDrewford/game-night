@@ -7,5 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     globals: true,
+    // functions/ is a separate deployable with its own package.json/vitest —
+    // run its tests via `npm test` inside functions/, not from here.
+    exclude: ['**/node_modules/**', 'functions/**'],
   },
 });

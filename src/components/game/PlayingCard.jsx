@@ -28,12 +28,49 @@ const Label = styled.div`
   padding: 2px 8px;
 `;
 
+const CardImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: ${({ $radius }) => $radius}px;
+`;
+
 // Abstract, swappable placeholder for card art — real artwork is a future
 // rendering-layer concern (theme lookup by cardId) that never touches this
-// component's layout contract (width/height/radius/label).
-export function PlayingCard({ width = 70, height = 98, radius = 10, stripe = '#C8592F', stripeSize = 7, label }) {
+// component's layout contract (width/height/radius/label). Passing
+// frontImageUrl (or backImageUrl for a face-down card) renders that image
+// instead; omitting both keeps today's striped placeholder as the default.
+export function PlayingCard({
+  width = 70,
+  height = 98,
+  radius = 10,
+  stripe = '#C8592F',
+  stripeSize = 7,
+  label,
+  frontImageUrl,
+  backImageUrl,
+  ...rest
+}) {
+  const imageUrl = frontImageUrl || backImageUrl;
+
+  if (imageUrl) {
+    return (
+      <Card $w={width} $h={height} $radius={radius} $stripe={stripe} $stripeSize={stripeSize} $hasLabel={false} {...rest}>
+        <CardImage src={imageUrl} alt={label || ''} $radius={radius} />
+      </Card>
+    );
+  }
+
   return (
-    <Card $w={width} $h={height} $radius={radius} $stripe={stripe} $stripeSize={stripeSize} $hasLabel={Boolean(label)}>
+    <Card
+      $w={width}
+      $h={height}
+      $radius={radius}
+      $stripe={stripe}
+      $stripeSize={stripeSize}
+      $hasLabel={Boolean(label)}
+      {...rest}
+    >
       {label && <Label>{label}</Label>}
     </Card>
   );

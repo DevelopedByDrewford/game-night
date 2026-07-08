@@ -1,14 +1,15 @@
 import { doc, runTransaction, updateDoc, serverTimestamp, collection } from 'firebase/firestore';
-import { db } from './firebase.js';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from './firebase.js';
 import { generateInviteCode } from './inviteCode.js';
 
 const MAX_PLAYERS = 8;
 
-// Room create/join/leave/start/end involve no hidden information, so they run
-// as plain client-side Firestore transactions here rather than Cloud
-// Functions — see the plan's Phase 0 simplification. Phase 1's startGame
-// (dealing hands) and playCard (resolving hidden state) genuinely need
-// server-authoritative Cloud Functions and will replace startGame() below.
+// Room create/join/leave/end involve no hidden information, so they run as
+// plain client-side Firestore transactions here rather than Cloud Functions
+// — see the plan's Phase 0 simplification. startGame (dealing hands) is
+// server-authoritative from Phase 1 on: it's a thin wrapper around the
+// `startGame` Cloud Function so LobbyContainer's call site doesn't change.
 
 export async function createRoom({ gameType = 'love-letter', hostUid, hostDisplayName, playerCount, ruleset, autoSkip }) {
   const roomRef = doc(collection(db, 'gameRooms'));
@@ -89,9 +90,9 @@ export async function leaveRoom({ roomId, uid }) {
 }
 
 export async function startGame({ roomId }) {
-  // Placeholder — flips status so the table screen is reachable end-to-end
-  // today. Real dealing/hidden-hand logic lands as a Cloud Function in Phase 1.
-  return updateDoc(doc(db, 'gameRooms', roomId), { status: 'active', updatedAt: serverTimestamp() });
+  const call = httpsCallable(functions, 'startGame');
+  const result = await call({ roomId });
+  return result.data;
 }
 
 export async function endGameEarly({ roomId }) {
