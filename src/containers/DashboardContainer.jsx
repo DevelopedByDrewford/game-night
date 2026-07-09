@@ -12,8 +12,9 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useActivity } from '../hooks/useActivity.js';
 import { useFollowing } from '../hooks/useFollowing.js';
 import { useGameCatalog } from '../hooks/useGameCatalog.js';
-import { joinRoomByCode, deleteRoom } from '../utils/rooms.js';
+import { joinRoomByCode, joinRoomById, deleteRoom } from '../utils/rooms.js';
 import { followUser } from '../utils/follows.js';
+import { dismissActivity } from '../utils/activity.js';
 import { colorForId } from '../utils/colors.js';
 import { catalogArtFor } from '../utils/catalogArt.js';
 
@@ -145,6 +146,7 @@ export function DashboardContainer() {
   const followingUids = new Set(friends.map((f) => f.uid));
   const gameNames = Object.fromEntries(games.map((g) => [g.id, g.displayName || g.id]));
   const [followBackBusyUid, setFollowBackBusyUid] = useState(null);
+  const [respondBusyId, setRespondBusyId] = useState(null);
 
   async function handleFollowBack(targetUid) {
     setFollowBackBusyUid(targetUid);
@@ -154,6 +156,29 @@ export function DashboardContainer() {
       console.error('[DashboardContainer] failed to follow back', err);
     } finally {
       setFollowBackBusyUid(null);
+    }
+  }
+
+  async function handleJoinInvite(entry) {
+    setRespondBusyId(entry.id);
+    try {
+      await joinRoomById({ roomId: entry.roomId, uid: user.uid, displayName: user.displayName || 'Player' });
+      await dismissActivity({ uid: user.uid, eventId: entry.id });
+      navigate(`/rooms/${entry.roomId}`);
+    } catch (err) {
+      console.error('[DashboardContainer] failed to join invited room', err);
+      setRespondBusyId(null);
+    }
+  }
+
+  async function handleDeclineInvite(entry) {
+    setRespondBusyId(entry.id);
+    try {
+      await dismissActivity({ uid: user.uid, eventId: entry.id });
+    } catch (err) {
+      console.error('[DashboardContainer] failed to decline invite', err);
+    } finally {
+      setRespondBusyId(null);
     }
   }
 
@@ -261,6 +286,9 @@ export function DashboardContainer() {
         followingUids={followingUids}
         followBackBusyUid={followBackBusyUid}
         onFollowBack={handleFollowBack}
+        respondBusyId={respondBusyId}
+        onJoinInvite={handleJoinInvite}
+        onDeclineInvite={handleDeclineInvite}
       />
 
       {deleteTarget && (

@@ -95,13 +95,14 @@ describe('full game playthrough (fake Firestore)', () => {
       expect(getDoc(`users/${uid}`).stats['love-letter'].wins).toBe(1);
     }
 
-    // Every participant gets a game_won/game_lost activity entry, matching
-    // whether they actually won.
+    // Every participant gets a game_started entry (from startGame) and a
+    // game_won/game_lost entry (from the game-end branch), matching whether
+    // they actually won.
     for (const uid of playerUids) {
       const activity = getCollection(`users/${uid}/activity`);
-      expect(activity).toHaveLength(1);
-      expect(activity[0]).toMatchObject({
-        type: winners.includes(uid) ? 'game_won' : 'game_lost',
+      expect(activity.map((a) => a.type).sort()).toEqual(['game_started', winners.includes(uid) ? 'game_won' : 'game_lost'].sort());
+      const resultEntry = activity.find((a) => a.type !== 'game_started');
+      expect(resultEntry).toMatchObject({
         gameType: 'love-letter',
         roomId: 'room2p',
         roomCode: 'TEST',
@@ -243,8 +244,8 @@ describe('full game playthrough (fake Firestore)', () => {
 });
 
 describe('turn notifications', () => {
-  it('notifies the first player when startGame deals to them', async () => {
-    const { db, getDoc, setDoc } = createFakeFirestore();
+  it('notifies the first player it is their turn, and the other player that the game is starting', async () => {
+    const { db, getDoc, setDoc, getCollection } = createFakeFirestore();
     const messaging = makeFakeMessaging();
     const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging });
     setDoc('users/alice', { pushTokens: ['tok-alice'] });
@@ -254,12 +255,28 @@ describe('turn notifications', () => {
     await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'notif1' } });
 
     const firstUid = getDoc('gameRooms/notif1/state/current').turnUid;
-    expect(messaging.sendEachForMulticast).toHaveBeenCalledTimes(1);
-    expect(messaging.sendEachForMulticast.mock.calls[0][0].tokens).toEqual([`tok-${firstUid}`]);
-    expect(messaging.sendEachForMulticast.mock.calls[0][0].notification).toEqual({
-      title: "It's your turn!",
-      body: "It's your move in Love Letter — Room TEST.",
+    const otherUid = firstUid === 'alice' ? 'bob' : 'alice';
+
+    expect(messaging.sendEachForMulticast).toHaveBeenCalledTimes(2);
+    const calls = messaging.sendEachForMulticast.mock.calls.map((c) => c[0]);
+    expect(calls).toContainEqual({
+      tokens: [`tok-${firstUid}`],
+      notification: { title: "It's your turn!", body: "It's your move in Love Letter — Room TEST." },
+      webpush: { fcmOptions: { link: 'https://game-night.drewford.dev/rooms/notif1' } },
     });
+    expect(calls).toContainEqual({
+      tokens: [`tok-${otherUid}`],
+      notification: { title: 'Game starting!', body: 'Love Letter in Room TEST is starting now.' },
+      webpush: { fcmOptions: { link: 'https://game-night.drewford.dev/rooms/notif1' } },
+    });
+
+    // Both players get a game_started activity entry, including the one
+    // whose turn it is (they just don't get the redundant push for it).
+    for (const uid of ['alice', 'bob']) {
+      expect(getCollection(`users/${uid}/activity`)).toContainEqual(
+        expect.objectContaining({ type: 'game_started', gameType: 'love-letter', roomId: 'notif1', roomCode: 'TEST' })
+      );
+    }
   });
 
   it('does not send anything when the player has no registered token', async () => {

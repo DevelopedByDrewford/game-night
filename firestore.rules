@@ -19,12 +19,15 @@ service cloud.firestore {
         allow read, write: if isSelf(uid);
       }
 
-      // Site activity feed (new follower, game won/lost) — written only by
-      // Cloud Functions (onFollowCreated trigger, and playCard's game-end
-      // branch), which use the Admin SDK and bypass rules entirely.
+      // Site activity feed (new follower, game won/lost/started, player
+      // joined your room, game invite) — only ever created by Cloud
+      // Functions (Admin SDK, bypasses rules entirely). The owner can
+      // delete their own entries though — e.g. dismissing a responded-to
+      // invite (Join/Decline) or clearing an old notification.
       match /activity/{eventId} {
         allow read: if isSelf(uid);
-        allow write: if false;
+        allow create, update: if false;
+        allow delete: if isSelf(uid);
       }
     }
 

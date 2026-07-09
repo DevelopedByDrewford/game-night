@@ -1,4 +1,4 @@
-import { doc, runTransaction, updateDoc, deleteDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, updateDoc, deleteDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from './firebase.js';
 import { generateInviteCode } from './inviteCode.js';
@@ -47,15 +47,11 @@ export async function createRoom({ gameType = 'love-letter', hostUid, hostDispla
   throw new Error('Could not generate a unique invite code — please try again.');
 }
 
-export async function joinRoomByCode({ code, uid, displayName }) {
-  const normalizedCode = code.trim().toUpperCase();
-  const codeRef = doc(db, 'roomCodes', normalizedCode);
-
+// Shared by both join paths below — the only difference between joining via
+// a pasted code and joining via an accepted invite is how the room doc gets
+// found in the first place.
+async function addPlayerToRoom(roomRef, { uid, displayName }) {
   return runTransaction(db, async (tx) => {
-    const codeSnap = await tx.get(codeRef);
-    if (!codeSnap.exists()) throw new Error('ROOM_NOT_FOUND');
-
-    const roomRef = doc(db, 'gameRooms', codeSnap.data().roomId);
     const roomSnap = await tx.get(roomRef);
     if (!roomSnap.exists()) throw new Error('ROOM_NOT_FOUND');
 
@@ -73,6 +69,31 @@ export async function joinRoomByCode({ code, uid, displayName }) {
 
     return { roomId: roomRef.id };
   });
+}
+
+export async function joinRoomByCode({ code, uid, displayName }) {
+  const normalizedCode = code.trim().toUpperCase();
+  // roomCodes docs are immutable after creation (rules: allow update: if
+  // false; the only delete path removes the room too), so reading this
+  // outside the join transaction is safe — the roomId it points to can't
+  // change out from under us.
+  const codeSnap = await getDoc(doc(db, 'roomCodes', normalizedCode));
+  if (!codeSnap.exists()) throw new Error('ROOM_NOT_FOUND');
+
+  return addPlayerToRoom(doc(db, 'gameRooms', codeSnap.data().roomId), { uid, displayName });
+}
+
+// Joining by roomId directly (no code needed) — used to accept a game
+// invite from the Dashboard activity feed, or to join from the Lobby after
+// following a shared room link.
+export async function joinRoomById({ roomId, uid, displayName }) {
+  return addPlayerToRoom(doc(db, 'gameRooms', roomId), { uid, displayName });
+}
+
+export async function inviteToRoom({ roomId, targetUid }) {
+  const call = httpsCallable(functions, 'inviteToRoom');
+  const result = await call({ roomId, targetUid });
+  return result.data;
 }
 
 export async function leaveRoom({ roomId, uid }) {

@@ -464,7 +464,7 @@ export function ActiveTableContainer({ room }) {
           </MyDiscardWrap>
         </TableColumn>
 
-        <ActionLogPanel entries={entries.map((e) => e.message)} />
+        <ActionLogPanel entries={entries} />
         <RulesReferencePanel ruleset={state.ruleset} />
       </Layout>
 

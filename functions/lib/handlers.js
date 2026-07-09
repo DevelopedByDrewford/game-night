@@ -1,7 +1,7 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { buildDeck, bracketForPlayerCount, isValidRulesetForPlayerCount, TOKENS_TO_WIN } from './deck.js';
 import { shuffle } from './shuffle.js';
-import { sendPushToUid, SITE_ORIGIN } from './push.js';
+import { sendPushToUid, SITE_ORIGIN, GAME_DISPLAY_NAMES } from './push.js';
 import {
   dealSetup,
   isLegalPlay,
@@ -10,11 +10,6 @@ import {
   nextActiveUid,
   spyBonusUid,
 } from './rules.js';
-
-// functions/ is a separate deployable from src/ (see scripts/seedCatalog.mjs
-// for the frontend's copy of these same display names) — duplicated rather
-// than shared, same as the card definitions in deck.js.
-const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter' };
 
 function emptyMap(uids, value) {
   return Object.fromEntries(uids.map((uid) => [uid, value]));
@@ -283,7 +278,7 @@ export function createHandlers({ db, FieldValue, messaging }) {
     const { roomId } = request.data || {};
     if (!roomId) throw new HttpsError('invalid-argument', 'roomId is required.');
 
-    const { firstPlayer, room } = await db.runTransaction(async (tx) => {
+    const { firstPlayer, room, turnOrder } = await db.runTransaction(async (tx) => {
       const roomSnap = await tx.get(roomDoc(roomId));
       if (!roomSnap.exists) throw new HttpsError('not-found', 'Room not found.');
       const room = roomSnap.data();
@@ -346,10 +341,36 @@ export function createHandlers({ db, FieldValue, messaging }) {
 
       tx.update(roomDoc(roomId), { status: 'active', updatedAt: FieldValue.serverTimestamp() });
 
-      return { firstPlayer, room };
+      return { firstPlayer, room, turnOrder };
     });
 
     await sendTurnNotification({ roomId, room, uid: firstPlayer });
+
+    // Everyone in the game gets a "game starting" activity entry, but only
+    // non-first players get a push for it — the first player already gets
+    // the more specific "It's your turn!" push above, and sending both
+    // back-to-back to the same person would just be noise.
+    const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
+    await Promise.all(
+      turnOrder.map(async (participantUid) => {
+        await activityCollection(participantUid).doc().set({
+          type: 'game_started',
+          gameType: room.gameType,
+          roomId,
+          roomCode: room.code,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        if (participantUid === firstPlayer) return;
+        await sendPushToUid({
+          db,
+          FieldValue,
+          messaging,
+          uid: participantUid,
+          notification: { title: 'Game starting!', body: `${gameName} in Room ${room.code} is starting now.` },
+          link: `${SITE_ORIGIN}/rooms/${roomId}`,
+        });
+      })
+    );
 
     return { success: true };
   }

@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { formatRelativeTime } from '../../utils/time.js';
 
 const Panel = styled.div`
   flex: 1;
@@ -33,13 +34,26 @@ const Entry = styled.div`
   padding-bottom: 6px;
 `;
 
+const EntryTime = styled.div`
+  font-size: 11px;
+  color: rgba(46, 32, 19, 0.45);
+  margin-top: 2px;
+`;
+
+// `entries` is the raw gameRooms/{roomId}/log docs ({id, message,
+// createdAt, ...}) — relative timestamps here (vs. the Dashboard activity
+// feed's absolute ones) since this is a live, in-the-moment view of a
+// single game session.
 export function ActionLogPanel({ entries }) {
   return (
     <Panel>
       <Title>Action Log</Title>
       <List>
-        {entries.map((entry, i) => (
-          <Entry key={i}>{entry}</Entry>
+        {entries.map((entry) => (
+          <Entry key={entry.id}>
+            {entry.message}
+            <EntryTime>{formatRelativeTime(entry.createdAt)}</EntryTime>
+          </Entry>
         ))}
       </List>
     </Panel>

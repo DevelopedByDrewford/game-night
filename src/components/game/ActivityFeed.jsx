@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar.jsx';
 import { Button } from '../ui/Button.jsx';
 import { colorForId } from '../../utils/colors.js';
+import { formatAbsoluteTime } from '../../utils/time.js';
 
 const Panel = styled.div`
   margin-top: 30px;
@@ -29,6 +30,7 @@ const Row = styled.div`
   border: 1.5px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.cardSm};
   padding: 12px 16px;
+  flex-wrap: wrap;
 `;
 
 const Icon = styled.div`
@@ -45,11 +47,12 @@ const Icon = styled.div`
 
 const Info = styled.div`
   flex: 1;
+  min-width: 160px;
   font-size: 14px;
   color: #2e2013;
 `;
 
-const ActorLink = styled(Link)`
+const InlineLink = styled(Link)`
   font-weight: 700;
   color: #2e2013;
   text-decoration: none;
@@ -65,22 +68,15 @@ const TimeText = styled.div`
   margin-top: 2px;
 `;
 
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
 const EmptyText = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.inkFainter};
 `;
-
-function timeAgo(timestamp) {
-  if (!timestamp?.toDate) return '';
-  const diffMs = Date.now() - timestamp.toDate().getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 function describeGameResult(entry, gameNames) {
   const gameName = gameNames[entry.gameType] || 'a game';
@@ -89,13 +85,25 @@ function describeGameResult(entry, gameNames) {
     : `You lost ${gameName} in Room ${entry.roomCode}.`;
 }
 
-export function ActivityFeed({ entries, loading, gameNames, followingUids, followBackBusyUid, onFollowBack }) {
+export function ActivityFeed({
+  entries,
+  loading,
+  gameNames,
+  followingUids,
+  followBackBusyUid,
+  onFollowBack,
+  respondBusyId,
+  onJoinInvite,
+  onDeclineInvite,
+}) {
   return (
     <Panel>
       <Title>Activity</Title>
 
       {loading && <EmptyText>Loading activity…</EmptyText>}
-      {!loading && entries.length === 0 && <EmptyText>Nothing yet — new followers and game results will show up here.</EmptyText>}
+      {!loading && entries.length === 0 && (
+        <EmptyText>Nothing yet — invites, new followers, and game updates will show up here.</EmptyText>
+      )}
 
       <List>
         {entries.map((entry) => {
@@ -105,8 +113,8 @@ export function ActivityFeed({ entries, loading, gameNames, followingUids, follo
               <Row key={entry.id}>
                 <Avatar size={40} color={colorForId(entry.actorUid)} />
                 <Info>
-                  <ActorLink to={`/profile/${entry.actorUid}`}>{entry.actorName}</ActorLink> followed you.
-                  <TimeText>{timeAgo(entry.createdAt)}</TimeText>
+                  <InlineLink to={`/profile/${entry.actorUid}`}>{entry.actorName}</InlineLink> followed you.
+                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
                 </Info>
                 <Button
                   $variant="outline"
@@ -119,12 +127,62 @@ export function ActivityFeed({ entries, loading, gameNames, followingUids, follo
             );
           }
 
+          if (entry.type === 'invite') {
+            const gameName = gameNames[entry.gameType] || 'a game';
+            const busy = respondBusyId === entry.id;
+            return (
+              <Row key={entry.id}>
+                <Avatar size={40} color={colorForId(entry.inviterUid)} />
+                <Info>
+                  <InlineLink to={`/profile/${entry.inviterUid}`}>{entry.inviterName}</InlineLink> invited you to{' '}
+                  {gameName} — Room {entry.roomCode}.
+                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
+                </Info>
+                <ButtonGroup>
+                  <Button disabled={busy} onClick={() => onJoinInvite(entry)}>
+                    Join
+                  </Button>
+                  <Button $variant="outline" disabled={busy} onClick={() => onDeclineInvite(entry)}>
+                    Decline
+                  </Button>
+                </ButtonGroup>
+              </Row>
+            );
+          }
+
+          if (entry.type === 'player_joined') {
+            const gameName = gameNames[entry.gameType] || 'a game';
+            return (
+              <Row key={entry.id}>
+                <Avatar size={40} color={colorForId(entry.playerUid)} />
+                <Info>
+                  <InlineLink to={`/profile/${entry.playerUid}`}>{entry.playerName}</InlineLink> joined your {gameName}{' '}
+                  room — <InlineLink to={`/rooms/${entry.roomId}`}>Room {entry.roomCode}</InlineLink>.
+                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
+                </Info>
+              </Row>
+            );
+          }
+
+          if (entry.type === 'game_started') {
+            const gameName = gameNames[entry.gameType] || 'a game';
+            return (
+              <Row key={entry.id}>
+                <Icon>🚀</Icon>
+                <Info>
+                  {gameName} is starting — <InlineLink to={`/rooms/${entry.roomId}`}>Room {entry.roomCode}</InlineLink>.
+                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
+                </Info>
+              </Row>
+            );
+          }
+
           return (
             <Row key={entry.id}>
               <Icon>{entry.type === 'game_won' ? '🏆' : '🎲'}</Icon>
               <Info>
                 {describeGameResult(entry, gameNames)}
-                <TimeText>{timeAgo(entry.createdAt)}</TimeText>
+                <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
               </Info>
             </Row>
           );

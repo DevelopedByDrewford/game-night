@@ -1,26 +1,39 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from 'styled-components';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { lightTheme } from '../styles/theme.js';
 import { DashboardContainer } from './DashboardContainer.jsx';
-import { deleteRoom } from '../utils/rooms.js';
+import { deleteRoom, joinRoomById } from '../utils/rooms.js';
+import { dismissActivity } from '../utils/activity.js';
 
 vi.mock('../hooks/useAuth.jsx', () => ({ useAuth: () => ({ user: { uid: 'me', displayName: 'Me' } }) }));
 vi.mock('../utils/rooms.js', () => ({
   joinRoomByCode: vi.fn(),
+  joinRoomById: vi.fn().mockResolvedValue(undefined),
   deleteRoom: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../utils/activity.js', () => ({ dismissActivity: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../utils/follows.js', () => ({ followUser: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../hooks/useFollowing.js', () => ({ useFollowing: () => ({ friends: [] }) }));
+vi.mock('../hooks/useGameCatalog.js', () => ({
+  useGameCatalog: () => ({ games: [{ id: 'love-letter', displayName: 'Love Letter' }], loading: false }),
 }));
 
 let fakeRooms = [];
+let fakeActivity = [];
 vi.mock('../hooks/useMyRooms.js', () => ({ useMyRooms: () => ({ rooms: fakeRooms, loading: false }) }));
+vi.mock('../hooks/useActivity.js', () => ({ useActivity: () => ({ entries: fakeActivity, loading: false }) }));
 
 function renderDashboard() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={['/dashboard']}>
       <ThemeProvider theme={lightTheme}>
-        <DashboardContainer />
+        <Routes>
+          <Route path="/dashboard" element={<DashboardContainer />} />
+          <Route path="/rooms/:roomId" element={<div>Room Page</div>} />
+        </Routes>
       </ThemeProvider>
     </MemoryRouter>
   );
@@ -29,6 +42,7 @@ function renderDashboard() {
 describe('DashboardContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fakeActivity = [];
     fakeRooms = [
       {
         id: 'room-mine-waiting',
@@ -87,5 +101,48 @@ describe('DashboardContainer', () => {
 
     expect(screen.queryByText('Delete this room?')).not.toBeInTheDocument();
     expect(deleteRoom).not.toHaveBeenCalled();
+  });
+
+  it('joining an invite from the activity feed joins the room, dismisses the entry, and navigates there', async () => {
+    fakeActivity = [
+      {
+        id: 'act1',
+        type: 'invite',
+        roomId: 'room9',
+        roomCode: 'ZZZZ',
+        gameType: 'love-letter',
+        inviterUid: 'alice',
+        inviterName: 'Alice',
+        createdAt: null,
+      },
+    ];
+    renderDashboard();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Join' }));
+
+    expect(joinRoomById).toHaveBeenCalledWith({ roomId: 'room9', uid: 'me', displayName: 'Me' });
+    expect(dismissActivity).toHaveBeenCalledWith({ uid: 'me', eventId: 'act1' });
+    expect(await screen.findByText('Room Page')).toBeInTheDocument();
+  });
+
+  it('declining an invite dismisses the entry without joining', async () => {
+    fakeActivity = [
+      {
+        id: 'act1',
+        type: 'invite',
+        roomId: 'room9',
+        roomCode: 'ZZZZ',
+        gameType: 'love-letter',
+        inviterUid: 'alice',
+        inviterName: 'Alice',
+        createdAt: null,
+      },
+    ];
+    renderDashboard();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
+
+    expect(dismissActivity).toHaveBeenCalledWith({ uid: 'me', eventId: 'act1' });
+    expect(joinRoomById).not.toHaveBeenCalled();
   });
 });

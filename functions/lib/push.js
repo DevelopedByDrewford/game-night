@@ -2,6 +2,13 @@
 // moves domains. Used to build the deep link a notification opens.
 export const SITE_ORIGIN = 'https://game-night.drewford.dev';
 
+// functions/ is a separate deployable from src/ (see scripts/seedCatalog.mjs
+// for the frontend's copy of these same display names) — duplicated rather
+// than shared, same as the card definitions in deck.js. Shared here (rather
+// than living in handlers.js) since both handlers.js and social.js build
+// notification/activity text that needs a display name.
+export const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter' };
+
 // Shared "send a push notification to every device a user has registered"
 // helper (users/{uid}.pushTokens) — used by turn notifications and the
 // new-follower notification. Always call this AFTER whatever write

@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { Button } from '../components/ui/Button.jsx';
+import { Avatar } from '../components/ui/Avatar.jsx';
 import { SeatRow } from '../components/game/SeatRow.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
-import { leaveRoom, startGame } from '../utils/rooms.js';
+import { useFollowing } from '../hooks/useFollowing.js';
+import { leaveRoom, startGame, joinRoomById, inviteToRoom } from '../utils/rooms.js';
 import { colorForId } from '../utils/colors.js';
 
 const TitleRow = styled.div`
@@ -58,17 +60,50 @@ const ErrorText = styled.div`
   margin-top: 10px;
 `;
 
+const InviteSection = styled.div`
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px dashed ${({ theme }) => theme.colors.border};
+`;
+
+const InviteTitle = styled.div`
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 12px;
+`;
+
+const InviteRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+`;
+
+const InviteName = styled.div`
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2e2013;
+`;
+
 export function LobbyContainer({ room }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const presence = useRoomPresenceMap(room.id);
+  const { friends } = useFollowing();
   const [error, setError] = useState(null);
   const [starting, setStarting] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [invitedUids, setInvitedUids] = useState(new Set());
+  const [inviteBusyUid, setInviteBusyUid] = useState(null);
 
   const isHost = user?.uid === room.hostUid;
+  const isMember = room.players.some((p) => p.uid === user?.uid);
   const seatCount = room.settings?.playerCount || room.players.length;
   const filledCount = room.players.length;
   const canStart = isHost && filledCount >= 2;
+  const roomFull = filledCount >= seatCount;
+  const invitableFriends = friends.filter((f) => !room.players.some((p) => p.uid === f.uid));
 
   const seats = [];
   for (let i = 0; i < seatCount; i++) {
@@ -113,6 +148,36 @@ export function LobbyContainer({ room }) {
     }
   }
 
+  async function handleJoin() {
+    setJoining(true);
+    setError(null);
+    try {
+      await joinRoomById({ roomId: room.id, uid: user.uid, displayName: user.displayName || 'Player' });
+    } catch (err) {
+      console.error('[LobbyContainer] failed to join room', err);
+      const messages = {
+        ROOM_NOT_JOINABLE: 'This game has already started or ended.',
+        ROOM_FULL: 'This room is full.',
+      };
+      setError(messages[err.message] || "Couldn't join that room — try again.");
+      setJoining(false);
+    }
+  }
+
+  async function handleInvite(targetUid) {
+    setInviteBusyUid(targetUid);
+    setError(null);
+    try {
+      await inviteToRoom({ roomId: room.id, targetUid });
+      setInvitedUids((prev) => new Set(prev).add(targetUid));
+    } catch (err) {
+      console.error('[LobbyContainer] failed to invite', err);
+      setError("Couldn't send that invite — try again.");
+    } finally {
+      setInviteBusyUid(null);
+    }
+  }
+
   return (
     <>
       <RoomChromeHeader title="Waiting Room" />
@@ -131,7 +196,14 @@ export function LobbyContainer({ room }) {
           ))}
         </Seats>
 
-        {isHost ? (
+        {!isMember ? (
+          <>
+            <Button $fullWidth disabled={joining || roomFull} onClick={handleJoin}>
+              {roomFull ? 'Room Full' : joining ? 'Joining…' : 'Join Game'}
+            </Button>
+            <HelperText>You're not in this room yet — join in to grab a seat.</HelperText>
+          </>
+        ) : isHost ? (
           <>
             <Button $fullWidth disabled={!canStart || starting} onClick={handleStart}>
               Start Game
@@ -142,6 +214,28 @@ export function LobbyContainer({ room }) {
           <HelperText>Waiting for the host to start the game…</HelperText>
         )}
         {error && <ErrorText>{error}</ErrorText>}
+
+        {isMember && !roomFull && invitableFriends.length > 0 && (
+          <InviteSection>
+            <InviteTitle>Invite a friend</InviteTitle>
+            {invitableFriends.map((friend) => {
+              const invited = invitedUids.has(friend.uid);
+              return (
+                <InviteRow key={friend.uid}>
+                  <Avatar size={32} color={colorForId(friend.uid)} imageUrl={friend.avatarUrl} />
+                  <InviteName>{friend.displayName}</InviteName>
+                  <Button
+                    $variant="outline"
+                    disabled={invited || inviteBusyUid === friend.uid}
+                    onClick={() => handleInvite(friend.uid)}
+                  >
+                    {invited ? 'Invited' : 'Invite'}
+                  </Button>
+                </InviteRow>
+              );
+            })}
+          </InviteSection>
+        )}
       </PageWrap>
     </>
   );

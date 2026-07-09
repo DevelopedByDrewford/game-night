@@ -17,6 +17,9 @@ function renderFeed(props) {
           followingUids={new Set()}
           followBackBusyUid={null}
           onFollowBack={vi.fn()}
+          respondBusyId={null}
+          onJoinInvite={vi.fn()}
+          onDeclineInvite={vi.fn()}
           {...props}
         />
       </ThemeProvider>
@@ -71,5 +74,74 @@ describe('ActivityFeed', () => {
 
     expect(screen.getByText(/You won Love Letter in Room ABCD/)).toBeInTheDocument();
     expect(screen.getByText(/You lost Love Letter in Room WXYZ/)).toBeInTheDocument();
+  });
+
+  it('renders an invite entry with a profile link and Join/Decline buttons', async () => {
+    const onJoinInvite = vi.fn();
+    const onDeclineInvite = vi.fn();
+    const entry = {
+      id: '1',
+      type: 'invite',
+      roomId: 'room1',
+      roomCode: 'ABCD',
+      gameType: 'love-letter',
+      inviterUid: 'alice',
+      inviterName: 'Alice',
+      createdAt: null,
+    };
+    renderFeed({ entries: [entry], onJoinInvite, onDeclineInvite });
+
+    expect(screen.getByRole('link', { name: 'Alice' })).toHaveAttribute('href', '/profile/alice');
+    expect(screen.getByText(/invited you to Love Letter — Room ABCD/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Join' }));
+    expect(onJoinInvite).toHaveBeenCalledWith(entry);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
+    expect(onDeclineInvite).toHaveBeenCalledWith(entry);
+  });
+
+  it('disables Join/Decline while responding to that specific invite', () => {
+    renderFeed({
+      entries: [
+        { id: '1', type: 'invite', roomId: 'r1', roomCode: 'AAAA', gameType: 'love-letter', inviterUid: 'alice', inviterName: 'Alice', createdAt: null },
+      ],
+      respondBusyId: '1',
+    });
+
+    expect(screen.getByRole('button', { name: 'Join' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Decline' })).toBeDisabled();
+  });
+
+  it('renders a player_joined entry with links to the player and the room', () => {
+    renderFeed({
+      entries: [
+        {
+          id: '1',
+          type: 'player_joined',
+          playerUid: 'bob',
+          playerName: 'Bob',
+          gameType: 'love-letter',
+          roomId: 'room1',
+          roomCode: 'ABCD',
+          createdAt: null,
+        },
+      ],
+    });
+
+    expect(screen.getByRole('link', { name: 'Bob' })).toHaveAttribute('href', '/profile/bob');
+    expect(screen.getByRole('link', { name: 'Room ABCD' })).toHaveAttribute('href', '/rooms/room1');
+    expect(screen.getByText(/joined your Love Letter/)).toBeInTheDocument();
+  });
+
+  it('renders a game_started entry linking to the room', () => {
+    renderFeed({
+      entries: [
+        { id: '1', type: 'game_started', gameType: 'love-letter', roomId: 'room1', roomCode: 'ABCD', createdAt: null },
+      ],
+    });
+
+    expect(screen.getByText(/Love Letter is starting/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Room ABCD' })).toHaveAttribute('href', '/rooms/room1');
   });
 });
