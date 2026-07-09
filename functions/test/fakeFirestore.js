@@ -74,6 +74,9 @@ export function createFakeFirestore() {
     async update(data) {
       store.set(path, mergeValue(store.get(path) || {}, data));
     },
+    async delete() {
+      store.delete(path);
+    },
   });
 
   const db = {

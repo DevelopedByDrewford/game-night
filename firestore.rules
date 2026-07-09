@@ -16,6 +16,23 @@ service cloud.firestore {
       allow write: if isSelf(uid);
 
       match /follows/{followedUid} {
+        allow read, delete: if isSelf(uid);
+        // Blocked-from-following check: reject if followedUid has blocked
+        // uid. Covers both a brand-new follow and re-following after an
+        // unfollow (followUser() unconditionally setDoc()s, which hits
+        // `update` rather than `create` if the doc still exists from a
+        // prior follow — same check either way).
+        allow create, update: if isSelf(uid) &&
+          !exists(/databases/$(database)/documents/users/$(followedUid)/blocks/$(uid));
+      }
+
+      // One-directional block — see src/utils/follows.js#blockUser. Only
+      // the blocker can read/write their own block list; the *other*
+      // direction of severing the relationship (removing the blocker from
+      // the blocked user's own following list) is Cloud-Functions-only
+      // (onBlocked trigger), since a client can't write someone else's
+      // follows subcollection.
+      match /blocks/{blockedUid} {
         allow read, write: if isSelf(uid);
       }
 

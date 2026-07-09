@@ -106,6 +106,9 @@ export function createSocialHandlers({ db, FieldValue, messaging }) {
     const targetSnap = await db.doc(`users/${targetUid}`).get();
     if (!targetSnap.exists) throw new HttpsError('not-found', 'Player not found.');
 
+    const blockSnap = await db.doc(`users/${targetUid}/blocks/${uid}`).get();
+    if (blockSnap.exists) throw new HttpsError('permission-denied', "You can't invite that player.");
+
     const inviterName = playerName(room, uid);
     const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
 
@@ -131,5 +134,20 @@ export function createSocialHandlers({ db, FieldValue, messaging }) {
     return { success: true };
   }
 
-  return { onFollowed, onRoomPlayersChanged, inviteToRoom };
+  // Fired from the users/{blockerUid}/blocks/{blockedUid} onDocumentCreated
+  // trigger in index.js. blockUser() already removes blockedUid from
+  // blockerUid's own following list client-side (it has permission to
+  // write its own follows subcollection) — the one thing only Cloud
+  // Functions can do is the *other* direction, removing blockerUid from
+  // blockedUid's following list, so the block isn't one-directional. No
+  // activity entry or push here — a block is a quiet action, not something
+  // to surface to the person being blocked.
+  async function onBlocked({ blockerUid, blockedUid }) {
+    await Promise.all([
+      db.doc(`users/${blockerUid}/follows/${blockedUid}`).delete(),
+      db.doc(`users/${blockedUid}/follows/${blockerUid}`).delete(),
+    ]);
+  }
+
+  return { onFollowed, onRoomPlayersChanged, inviteToRoom, onBlocked };
 }

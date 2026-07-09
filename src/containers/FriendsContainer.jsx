@@ -3,10 +3,12 @@ import styled from 'styled-components';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
 import { Button } from '../components/ui/Button.jsx';
+import { Modal } from '../components/ui/Modal.jsx';
+import { OverflowMenu } from '../components/ui/OverflowMenu.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useFollowing } from '../hooks/useFollowing.js';
 import { usePresenceMap } from '../hooks/usePresenceMap.js';
-import { followUser } from '../utils/follows.js';
+import { followUser, unfollowUser, blockUser } from '../utils/follows.js';
 import { colorForId } from '../utils/colors.js';
 
 const Header = styled.div`
@@ -106,6 +108,26 @@ const EmptyText = styled.div`
   color: ${({ theme }) => theme.colors.inkFainter};
 `;
 
+const ModalTitle = styled.div`
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 22px;
+  color: #2e2013;
+  margin-bottom: 8px;
+`;
+
+const ModalText = styled.div`
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(46, 32, 19, 0.75);
+  margin-bottom: 22px;
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+`;
+
 export function FriendsContainer() {
   const { user } = useAuth();
   const { friends, loading } = useFollowing();
@@ -113,6 +135,8 @@ export function FriendsContainer() {
   const [targetUid, setTargetUid] = useState('');
   const [followError, setFollowError] = useState(null);
   const [following, setFollowing] = useState(false);
+  const [rowBusyUid, setRowBusyUid] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null); // friend object pending block confirmation
 
   async function handleFollow(e) {
     e.preventDefault();
@@ -130,6 +154,30 @@ export function FriendsContainer() {
       setFollowError(messages[err.message] || "Couldn't follow that player.");
     } finally {
       setFollowing(false);
+    }
+  }
+
+  async function handleUnfollow(friendUid) {
+    setRowBusyUid(friendUid);
+    try {
+      await unfollowUser({ uid: user.uid, targetUid: friendUid });
+    } catch (err) {
+      console.error('[FriendsContainer] failed to unfollow', err);
+    } finally {
+      setRowBusyUid(null);
+    }
+  }
+
+  async function handleConfirmBlock() {
+    if (!blockTarget) return;
+    setRowBusyUid(blockTarget.uid);
+    try {
+      await blockUser({ uid: user.uid, targetUid: blockTarget.uid });
+      setBlockTarget(null);
+    } catch (err) {
+      console.error('[FriendsContainer] failed to block', err);
+    } finally {
+      setRowBusyUid(null);
     }
   }
 
@@ -179,10 +227,43 @@ export function FriendsContainer() {
                 <StatusText>{online ? 'Online' : 'Offline'}</StatusText>
               </Info>
               <InviteButton>Invite</InviteButton>
+              <OverflowMenu
+                ariaLabel={`More options for ${friend.displayName}`}
+                items={[
+                  {
+                    label: 'Unfollow',
+                    disabled: rowBusyUid === friend.uid,
+                    onClick: () => handleUnfollow(friend.uid),
+                  },
+                  {
+                    label: 'Block',
+                    danger: true,
+                    disabled: rowBusyUid === friend.uid,
+                    onClick: () => setBlockTarget(friend),
+                  },
+                ]}
+              />
             </Row>
           );
         })}
       </List>
+
+      {blockTarget && (
+        <Modal onClose={() => !rowBusyUid && setBlockTarget(null)}>
+          <ModalTitle>Block {blockTarget.displayName}?</ModalTitle>
+          <ModalText>
+            You'll stop following each other, and they won't be able to follow you or invite you to games again.
+          </ModalText>
+          <ModalActions>
+            <Button onClick={handleConfirmBlock} disabled={Boolean(rowBusyUid)}>
+              {rowBusyUid ? 'Blocking…' : 'Block'}
+            </Button>
+            <Button $variant="outline" onClick={() => setBlockTarget(null)} disabled={Boolean(rowBusyUid)}>
+              Cancel
+            </Button>
+          </ModalActions>
+        </Modal>
+      )}
     </PageWrap>
   );
 }

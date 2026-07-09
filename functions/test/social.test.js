@@ -213,4 +213,45 @@ describe('inviteToRoom', () => {
       "You can't invite yourself."
     );
   });
+
+  it('rejects an invite to a player who has blocked the inviter', async () => {
+    const { db, setDoc } = createFakeFirestore();
+    const handlers = createSocialHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
+    setDoc('users/cleo', { displayName: 'Cleo' });
+    setDoc('users/cleo/blocks/alice', { since: new Date() });
+    setDoc('gameRooms/room1', makeRoom({ hostUid: 'alice', playerUids: ['alice', 'bob'] }));
+
+    await expect(handlers.inviteToRoom(callAs('alice', { roomId: 'room1', targetUid: 'cleo' }))).rejects.toThrow(
+      "You can't invite that player."
+    );
+  });
+});
+
+describe('onBlocked', () => {
+  it("removes the blocked user from the blocker's following list", async () => {
+    const { db, setDoc, getDoc } = createFakeFirestore();
+    const handlers = createSocialHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
+    setDoc('users/alice/follows/bob', { since: new Date() });
+
+    await handlers.onBlocked({ blockerUid: 'alice', blockedUid: 'bob' });
+
+    expect(getDoc('users/alice/follows/bob')).toBeUndefined();
+  });
+
+  it("also removes the blocker from the blocked user's following list (severs both directions)", async () => {
+    const { db, setDoc, getDoc } = createFakeFirestore();
+    const handlers = createSocialHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
+    setDoc('users/bob/follows/alice', { since: new Date() });
+
+    await handlers.onBlocked({ blockerUid: 'alice', blockedUid: 'bob' });
+
+    expect(getDoc('users/bob/follows/alice')).toBeUndefined();
+  });
+
+  it('is a no-op (does not throw) when neither follow relationship exists', async () => {
+    const { db } = createFakeFirestore();
+    const handlers = createSocialHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
+
+    await expect(handlers.onBlocked({ blockerUid: 'alice', blockedUid: 'bob' })).resolves.toBeUndefined();
+  });
 });

@@ -31,3 +31,10 @@ export const onRoomUpdated = onDocumentUpdated('gameRooms/{roomId}', (event) =>
     after: event.data.after.data(),
   })
 );
+
+export const onBlockCreated = onDocumentCreated('users/{blockerUid}/blocks/{blockedUid}', (event) =>
+  socialHandlers.onBlocked({
+    blockerUid: event.params.blockerUid,
+    blockedUid: event.params.blockedUid,
+  })
+);
