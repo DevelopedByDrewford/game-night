@@ -222,6 +222,47 @@ describe('activateClue + guessWord turn cycle', () => {
     expect(state.phase).toBe('clueOrGuess');
   });
 
+  it('tags clue and guess log entries with structured metadata for the frontend clues record', async () => {
+    const { getDoc, getCollection, handlers, roomId, uidA, uidB } = await setupSwappedGame();
+    const turn1 = getDoc(`gameRooms/${roomId}/state/current`).turnUid;
+    const turn2 = turn1 === uidA ? uidB : uidA;
+
+    await handlers.activateClue({ auth: { uid: turn1 }, data: { roomId, clueId: 'exact-word-length' } });
+    await handlers.guessWord({
+      auth: { uid: turn2 },
+      data: { roomId, guess: wrongSpellableGuessFor(turn2, uidA) },
+    });
+
+    const entries = getCollection(`gameRooms/${roomId}/log`);
+    const clueEntry = entries.find((e) => e.kind === 'clue');
+    expect(clueEntry).toMatchObject({ clueId: 'exact-word-length', activatorUid: turn1, aboutUid: turn2 });
+
+    const guessEntry = entries.find((e) => e.kind === 'guess');
+    expect(guessEntry).toMatchObject({
+      guesserUid: turn2,
+      aboutUid: turn1,
+      correct: false,
+      guess: wrongSpellableGuessFor(turn2, uidA),
+    });
+
+    // Entries with no game-meaning kind (dealt/locked-in/swap) stay
+    // unstructured — CluesRecord should skip them entirely.
+    expect(entries.some((e) => e.kind === undefined)).toBe(true);
+  });
+
+  it('tags a resolved Rhyme Time response with the original activator as activatorUid', async () => {
+    const { getDoc, getCollection, handlers, roomId, uidA, uidB } = await setupSwappedGame();
+    const activator = getDoc(`gameRooms/${roomId}/state/current`).turnUid;
+    const responder = activator === uidA ? uidB : uidA;
+
+    await handlers.activateClue({ auth: { uid: activator }, data: { roomId, clueId: 'rhyme-time' } });
+    await handlers.respondToRhyme({ auth: { uid: responder }, data: { roomId, word: 'blab' } });
+
+    const entries = getCollection(`gameRooms/${roomId}/log`);
+    const rhymeEntry = entries.find((e) => e.kind === 'clue' && e.clueId === 'rhyme-time');
+    expect(rhymeEntry).toMatchObject({ activatorUid: activator, aboutUid: responder });
+  });
+
   it('rejects a guess that cannot be spelled from the tiles in front of the guesser', async () => {
     const { getDoc, handlers, roomId } = await setupSwappedGame();
     const turn1 = getDoc(`gameRooms/${roomId}/state/current`).turnUid;

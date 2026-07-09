@@ -35,12 +35,18 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
   const logCollection = (roomId) => db.collection(`gameRooms/${roomId}/log`);
   const activityCollection = (uid) => db.collection(`users/${uid}/activity`);
 
-  function appendLogEntry(tx, roomId, seq, message) {
+  // `extra` carries structured fields (kind/clueId/activatorUid/aboutUid/
+  // guesserUid/correct/guess) for entries the frontend's CluesRecord panel
+  // filters on — message text alone isn't queryable client-side. Entries
+  // with no `extra` (dealing, word-locked, swap) are plain log lines that
+  // CluesRecord ignores (no `kind` to match).
+  function appendLogEntry(tx, roomId, seq, message, extra = {}) {
     tx.set(logCollection(roomId).doc(), {
       seq,
       roundNumber: null, // unused for Wordy — kept for shape parity with Love Letter's log entries
       message,
       createdAt: FieldValue.serverTimestamp(),
+      ...extra,
     });
   }
 
@@ -294,7 +300,12 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
         }
       }
 
-      appendLogEntry(tx, roomId, state.logSeq, result.logMessage);
+      appendLogEntry(tx, roomId, state.logSeq, result.logMessage, {
+        kind: 'clue',
+        clueId,
+        activatorUid: uid,
+        aboutUid: opponentUid,
+      });
 
       const outcome = checkAndMaybeCompleteGame({ turnOrder: state.turnOrder, tokens, guessedCorrectly: state.guessedCorrectly });
       if (outcome?.phase === 'completed') {
@@ -357,7 +368,8 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
         tx,
         roomId,
         state.logSeq,
-        `${playerName(room, uid)} rhymed with "${responseWord}" for Rhyme Time.`
+        `${playerName(room, uid)} rhymed with "${responseWord}" for Rhyme Time.`,
+        { kind: 'clue', clueId: RHYME_TIME_CLUE_ID, activatorUid: state.pendingClue.activatorUid, aboutUid: uid }
       );
 
       const outcome = checkAndMaybeCompleteGame({ turnOrder: state.turnOrder, tokens, guessedCorrectly: state.guessedCorrectly });
@@ -415,7 +427,13 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
 
       if (correct) {
         const guessedCorrectly = { ...state.guessedCorrectly, [opponentUid]: true };
-        appendLogEntry(tx, roomId, state.logSeq, `${playerName(room, uid)} correctly guessed ${playerName(room, opponentUid)}'s word!`);
+        appendLogEntry(tx, roomId, state.logSeq, `${playerName(room, uid)} correctly guessed ${playerName(room, opponentUid)}'s word!`, {
+          kind: 'guess',
+          guesserUid: uid,
+          aboutUid: opponentUid,
+          correct: true,
+          guess: normalized,
+        });
 
         const outcome = checkAndMaybeCompleteGame({ turnOrder: state.turnOrder, tokens: state.tokens, guessedCorrectly });
         if (outcome?.phase === 'completed') {
@@ -433,7 +451,13 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
 
       // Incorrect: guesser's opponent gets +2 tokens; turn ends.
       const tokens = { ...state.tokens, [opponentUid]: (state.tokens[opponentUid] || 0) + WRONG_GUESS_PENALTY };
-      appendLogEntry(tx, roomId, state.logSeq, `${playerName(room, uid)} guessed wrong — ${playerName(room, opponentUid)} earns ${WRONG_GUESS_PENALTY} tokens.`);
+      appendLogEntry(tx, roomId, state.logSeq, `${playerName(room, uid)} guessed wrong — ${playerName(room, opponentUid)} earns ${WRONG_GUESS_PENALTY} tokens.`, {
+        kind: 'guess',
+        guesserUid: uid,
+        aboutUid: opponentUid,
+        correct: false,
+        guess: normalized,
+      });
 
       const outcome = checkAndMaybeCompleteGame({ turnOrder: state.turnOrder, tokens, guessedCorrectly: state.guessedCorrectly });
       if (outcome?.phase === 'completed') {

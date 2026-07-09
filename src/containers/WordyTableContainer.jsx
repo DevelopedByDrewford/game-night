@@ -5,6 +5,7 @@ import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
 import { LetterTile } from '../components/wordy/LetterTile.jsx';
 import { WordBuilder } from '../components/wordy/WordBuilder.jsx';
 import { ClueCard } from '../components/wordy/ClueCard.jsx';
+import { CluesRecord } from '../components/wordy/CluesRecord.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
@@ -104,13 +105,11 @@ export function WordyTableContainer({ room }) {
     });
   }
 
+  // Every clue — arg-needing or not — goes through the review/confirm
+  // modal below before actually activating; clicking a clue card just
+  // opens it.
   function handleClueClick(clueId) {
     if (!myTurn || submitting || state.pendingClue) return;
-    const kind = CLUE_ARG_KIND[clueId];
-    if (!kind) {
-      runAction(() => activateClue({ roomId: room.id, clueId }));
-      return;
-    }
     setPendingClueId(clueId);
     setArgValue('');
   }
@@ -118,7 +117,7 @@ export function WordyTableContainer({ room }) {
   async function handleConfirmArg() {
     const clueId = pendingClueId;
     const kind = CLUE_ARG_KIND[clueId];
-    const args = kind === 'letter' ? { letter: argValue } : { builtWord: argValue };
+    const args = kind === 'letter' ? { letter: argValue } : kind === 'word' ? { builtWord: argValue } : {};
     await runAction(async () => {
       await activateClue({ roomId: room.id, clueId, args });
       setPendingClueId(null);
@@ -272,6 +271,8 @@ export function WordyTableContainer({ room }) {
               ) : (
                 <div className="wordy-table-helper-text">Waiting for {opponent?.displayName || 'opponent'}…</div>
               )}
+
+              <CluesRecord entries={entries} viewerUid={user.uid} opponentUid={opponentUid} myWord={hand.secretWord} />
             </>
           )}
 
@@ -323,12 +324,12 @@ export function WordyTableContainer({ room }) {
                 />
               ))}
             </div>
-          ) : (
+          ) : CLUE_ARG_KIND[pendingClueId] === 'word' ? (
             <WordBuilder letters={flatLetters(hand.tilesInFront)} onWordChange={setArgValue} disabled={submitting} tileSize={40} />
-          )}
+          ) : null}
 
           <div className="wordy-table-modal-actions">
-            <Button onClick={handleConfirmArg} disabled={submitting || !argValue}>
+            <Button onClick={handleConfirmArg} disabled={submitting || (CLUE_ARG_KIND[pendingClueId] && !argValue)}>
               Confirm
             </Button>
             <Button $variant="outline" onClick={() => setPendingClueId(null)} disabled={submitting}>

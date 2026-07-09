@@ -15,7 +15,8 @@ import {
 
 vi.mock('../hooks/useAuth.jsx', () => ({ useAuth: () => ({ user: { uid: 'me' } }) }));
 vi.mock('../hooks/useRoomPresenceMap.js', () => ({ useRoomPresenceMap: () => ({ opp: true }) }));
-vi.mock('../hooks/useRoomLog.js', () => ({ useRoomLog: () => ({ entries: [], loading: false }) }));
+let fakeEntries = [];
+vi.mock('../hooks/useRoomLog.js', () => ({ useRoomLog: () => ({ entries: fakeEntries, loading: false }) }));
 vi.mock('../utils/rooms.js', () => ({ endGameEarly: vi.fn() }));
 vi.mock('../utils/wordyGameplay.js', () => ({
   submitSecretWord: vi.fn().mockResolvedValue({ success: true }),
@@ -72,6 +73,7 @@ describe('WordyTableContainer', () => {
       secretWord: null,
       tiebreakerWord: null,
     };
+    fakeEntries = [];
   });
 
   it('word submission: renders own tiles and builds the word by clicking tiles in order', async () => {
@@ -97,12 +99,27 @@ describe('WordyTableContainer', () => {
     expect(screen.queryByRole('button', { name: 'Lock it in' })).not.toBeInTheDocument();
   });
 
-  it('clueOrGuess: activates a no-arg clue immediately on click', async () => {
+  it('clueOrGuess: a no-arg clue opens a review/confirm modal before activating', async () => {
     fakeState = { ...fakeState, phase: 'clueOrGuess', turnUid: 'me' };
     renderTable();
 
     await userEvent.click(screen.getByText('Last Letter'));
-    expect(activateClue).toHaveBeenCalledWith({ roomId: 'room1', clueId: 'last-letter' });
+    expect(activateClue).not.toHaveBeenCalled();
+    expect(screen.getByText(/reveals the last letter/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(activateClue).toHaveBeenCalledWith({ roomId: 'room1', clueId: 'last-letter', args: {} });
+  });
+
+  it('clueOrGuess: Cancel in the clue confirm modal closes it without activating', async () => {
+    fakeState = { ...fakeState, phase: 'clueOrGuess', turnUid: 'me' };
+    renderTable();
+
+    await userEvent.click(screen.getByText('Last Letter'));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(activateClue).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
   });
 
   it('clueOrGuess: an arg-needing clue opens a letter picker, then confirms with the chosen letter', async () => {
@@ -180,5 +197,22 @@ describe('WordyTableContainer', () => {
     fakeState = { ...fakeState, phase: 'completed', winnerUid: 'opp' };
     renderTable();
     expect(screen.getByText('Opp won.')).toBeInTheDocument();
+  });
+
+  it('clueOrGuess: renders the Clues Record filtered to what I\'ve gathered, and toggles to what they know about my word', async () => {
+    fakeState = { ...fakeState, phase: 'clueOrGuess', turnUid: 'opp' };
+    fakeHand.secretWord = 'CAB';
+    fakeEntries = [
+      { id: '1', kind: 'clue', clueId: 'last-letter', activatorUid: 'me', aboutUid: 'opp', message: 'I learned it ends in "B".' },
+      { id: '2', kind: 'guess', guesserUid: 'opp', aboutUid: 'me', correct: false, guess: 'DOG', message: 'Opp guessed wrong.' },
+    ];
+    renderTable();
+
+    expect(screen.getByText('Last Letter')).toBeInTheDocument();
+    expect(screen.queryByText('"DOG"')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('My Word'));
+    expect(screen.getByText('Your word: CAB')).toBeInTheDocument();
+    expect(screen.getByText('"DOG"')).toBeInTheDocument();
   });
 });

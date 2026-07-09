@@ -1,0 +1,101 @@
+.clues-record {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-card-sm);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  margin-top: 16px;
+}
+
+.clues-record__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.clues-record__title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: #2e2013;
+}
+
+.clues-record__header .segmented-control {
+  width: 220px;
+}
+
+.clues-record__header .segmented-control__option {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.clues-record__my-word {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-terracotta);
+  margin-bottom: 10px;
+}
+
+.clues-record__empty {
+  font-size: 13px;
+  color: rgba(46, 32, 19, 0.55);
+}
+
+.clues-record__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.clues-record__entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(46, 32, 19, 0.75);
+  border-bottom: 1px dashed rgba(46, 32, 19, 0.2);
+  padding-bottom: 6px;
+}
+
+.clues-record__tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: var(--radius-badge-sm);
+  color: var(--color-surface);
+}
+
+.clues-record__tag--vanilla {
+  background: var(--color-avocado);
+}
+
+.clues-record__tag--spicy {
+  background: var(--color-terracotta);
+}
+
+.clues-record__tag--correct {
+  background: var(--color-avocado);
+}
+
+.clues-record__tag--wrong {
+  background: #8a8272;
+}
+
+.clues-record__detail {
+  flex: 1;
+  min-width: 140px;
+}
+
+.clues-record__time {
+  flex: none;
+  font-size: 11px;
+  color: rgba(46, 32, 19, 0.45);
+}
