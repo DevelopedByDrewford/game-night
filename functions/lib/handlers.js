@@ -1,7 +1,7 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { buildDeck, bracketForPlayerCount, isValidRulesetForPlayerCount, TOKENS_TO_WIN } from './deck.js';
 import { shuffle } from './shuffle.js';
-import { sendPushToUid, SITE_ORIGIN, GAME_DISPLAY_NAMES } from './push.js';
+import { sendPushToUid, notifyGameStarted, SITE_ORIGIN, GAME_DISPLAY_NAMES } from './push.js';
 import {
   dealSetup,
   isLegalPlay,
@@ -345,32 +345,7 @@ export function createHandlers({ db, FieldValue, messaging }) {
     });
 
     await sendTurnNotification({ roomId, room, uid: firstPlayer });
-
-    // Everyone in the game gets a "game starting" activity entry, but only
-    // non-first players get a push for it — the first player already gets
-    // the more specific "It's your turn!" push above, and sending both
-    // back-to-back to the same person would just be noise.
-    const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
-    await Promise.all(
-      turnOrder.map(async (participantUid) => {
-        await activityCollection(participantUid).doc().set({
-          type: 'game_started',
-          gameType: room.gameType,
-          roomId,
-          roomCode: room.code,
-          createdAt: FieldValue.serverTimestamp(),
-        });
-        if (participantUid === firstPlayer) return;
-        await sendPushToUid({
-          db,
-          FieldValue,
-          messaging,
-          uid: participantUid,
-          notification: { title: 'Game starting!', body: `${gameName} in Room ${room.code} is starting now.` },
-          link: `${SITE_ORIGIN}/rooms/${roomId}`,
-        });
-      })
-    );
+    await notifyGameStarted({ db, FieldValue, messaging, room, roomId, turnOrder, notifyUid: firstPlayer });
 
     return { success: true };
   }

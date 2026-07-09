@@ -3,6 +3,7 @@ import { useRoom } from '../hooks/useRoom.js';
 import { useRoomPresence } from '../hooks/useRoomPresence.js';
 import { LobbyContainer } from './LobbyContainer.jsx';
 import { ActiveTableContainer } from './ActiveTableContainer.jsx';
+import { WordyTableContainer } from './WordyTableContainer.jsx';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import './RoomContainer.css';
 
@@ -31,7 +32,9 @@ export function RoomContainer() {
   }
 
   if (room.status === 'waiting') return <LobbyContainer room={room} />;
-  if (room.status === 'active') return <ActiveTableContainer room={room} />;
+  if (room.status === 'active') {
+    return room.gameType === 'a-little-wordy' ? <WordyTableContainer room={room} /> : <ActiveTableContainer room={room} />;
+  }
 
   return (
     <PageWrap $maxWidth="640px">

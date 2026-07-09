@@ -32,6 +32,7 @@ const db = getFirestore();
 
 const games = {
   'love-letter': { displayName: 'Love Letter', minPlayers: 2, maxPlayers: 8, active: true, icon: '💌' },
+  'a-little-wordy': { displayName: 'A Little Wordy', minPlayers: 2, maxPlayers: 2, active: true, icon: '🍇' },
   connect4: { displayName: 'Connect 4', minPlayers: 2, maxPlayers: 2, active: false, icon: '🔴' },
   mancala: { displayName: 'Mancala', minPlayers: 2, maxPlayers: 2, active: false, icon: '🟤' },
 };

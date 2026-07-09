@@ -1,0 +1,152 @@
+.wordy-table-layout {
+  max-width: var(--max-width-grid);
+  margin: 0 auto;
+  padding: 28px 32px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .wordy-table-layout {
+    padding-bottom: 90px;
+    flex-direction: column;
+  }
+}
+
+.wordy-table-column {
+  flex: 2;
+  min-width: 420px;
+}
+
+@media (max-width: 640px) {
+  .wordy-table-column {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.wordy-table-opponent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+
+.wordy-table-opponent__name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--color-ink);
+}
+
+.wordy-table-opponent__status {
+  font-size: 12px;
+  color: var(--color-ink-faint);
+}
+
+.wordy-table-turn-indicator {
+  border: 1.5px dashed var(--color-terracotta);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-terracotta);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.wordy-table-token-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.wordy-table-panel {
+  border: 3px solid var(--color-terracotta);
+  background: #fdf0e5;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.wordy-table-panel__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: #2e2013;
+  margin-bottom: 12px;
+}
+
+.wordy-table-tile-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wordy-table-clue-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wordy-table-word-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.wordy-table-word-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-on-surface);
+  font-size: 14px;
+  font-family: var(--font-body);
+}
+
+.wordy-table-helper-text {
+  font-size: 14px;
+  color: var(--color-ink-faint);
+  text-align: center;
+  margin-top: 10px;
+}
+
+.wordy-table-letter-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.wordy-table-clue-description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(46, 32, 19, 0.75);
+  margin-bottom: 18px;
+}
+
+.wordy-table-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.wordy-table-message-text {
+  font-size: 13px;
+  margin-top: 10px;
+  color: var(--color-avocado);
+  text-align: center;
+}
+
+.wordy-table-message-text--error {
+  color: var(--color-terracotta);
+}

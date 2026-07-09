@@ -125,7 +125,7 @@ export function DashboardContainer() {
           <div className="dashboard-subtitle">Pick up where you left off, or start something new.</div>
         </div>
         <div className="dashboard-ctas">
-          <Button as={Link} to="/rooms/new">
+          <Button as={Link} to="/catalog">
             + Create Room
           </Button>
           {joinOpen ? (

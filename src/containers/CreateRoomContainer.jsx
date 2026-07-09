@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase.js';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -22,7 +22,9 @@ const RULESET_OPTIONS = [
 export function CreateRoomContainer() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [playerCount, setPlayerCount] = useState(4);
+  const { gameType = 'love-letter' } = useParams();
+  const isWordy = gameType === 'a-little-wordy';
+  const [playerCount, setPlayerCount] = useState(isWordy ? 2 : 4);
   const [ruleset, setRuleset] = useState('classic');
   const [autoSkip, setAutoSkip] = useState(false);
   const [room, setRoom] = useState(null);
@@ -42,8 +44,8 @@ export function CreateRoomContainer() {
   // smaller player count gets to keep that choice — that's the "some
   // customization" on top of the player-count-based default).
   useEffect(() => {
-    if (playerCount > 4 && ruleset !== 'extended') setRuleset('extended');
-  }, [playerCount, ruleset]);
+    if (!isWordy && playerCount > 4 && ruleset !== 'extended') setRuleset('extended');
+  }, [isWordy, playerCount, ruleset]);
 
   const rulesetOptions = playerCount > 4 ? RULESET_OPTIONS.filter((o) => o.value !== 'classic') : RULESET_OPTIONS;
 
@@ -55,6 +57,7 @@ export function CreateRoomContainer() {
     createStarted.current = true;
 
     createRoom({
+      gameType,
       hostUid: user.uid,
       hostDisplayName: user.displayName || 'Host',
       playerCount,
@@ -106,32 +109,40 @@ export function CreateRoomContainer() {
       <RoomChromeHeader title="Set Up Your Table" />
       <PageWrap $maxWidth="640px" $padding="44px 32px">
         <div className="create-room-title">Set Up Your Table</div>
-        <div className="create-room-subtitle">Love Letter · configure before you invite friends.</div>
+        <div className="create-room-subtitle">
+          {isWordy ? 'A Little Wordy' : 'Love Letter'} · configure before you invite friends.
+        </div>
 
         <div className="create-room-card">
           <div>
             <div className="create-room-section-label">Player count</div>
-            <div className="create-room-stepper-row">
-              <button className="create-room-stepper-button" onClick={() => setPlayerCount((c) => Math.max(2, c - 1))}>
-                –
-              </button>
-              <div className="create-room-stepper-value">{playerCount}</div>
-              <button className="create-room-stepper-button" onClick={() => setPlayerCount((c) => Math.min(6, c + 1))}>
-                +
-              </button>
-              <div className="create-room-stepper-hint">players (2–6)</div>
-            </div>
-          </div>
-
-          <div>
-            <div className="create-room-section-label">Ruleset</div>
-            <SegmentedControl options={rulesetOptions} value={ruleset} onChange={setRuleset} />
-            {playerCount > 4 && (
-              <div className="create-room-stepper-hint" style={{ marginTop: 8 }}>
-                5-6 player games always use the Extended deck (adds Spy &amp; Chancellor).
+            {isWordy ? (
+              <div className="create-room-stepper-hint">2 players — A Little Wordy is a head-to-head game.</div>
+            ) : (
+              <div className="create-room-stepper-row">
+                <button className="create-room-stepper-button" onClick={() => setPlayerCount((c) => Math.max(2, c - 1))}>
+                  –
+                </button>
+                <div className="create-room-stepper-value">{playerCount}</div>
+                <button className="create-room-stepper-button" onClick={() => setPlayerCount((c) => Math.min(6, c + 1))}>
+                  +
+                </button>
+                <div className="create-room-stepper-hint">players (2–6)</div>
               </div>
             )}
           </div>
+
+          {!isWordy && (
+            <div>
+              <div className="create-room-section-label">Ruleset</div>
+              <SegmentedControl options={rulesetOptions} value={ruleset} onChange={setRuleset} />
+              {playerCount > 4 && (
+                <div className="create-room-stepper-hint" style={{ marginTop: 8 }}>
+                  5-6 player games always use the Extended deck (adds Spy &amp; Chancellor).
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="create-room-toggle-row">
             <div>

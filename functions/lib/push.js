@@ -7,7 +7,7 @@ export const SITE_ORIGIN = 'https://game-night.drewford.dev';
 // than shared, same as the card definitions in deck.js. Shared here (rather
 // than living in handlers.js) since both handlers.js and social.js build
 // notification/activity text that needs a display name.
-export const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter' };
+export const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter', 'a-little-wordy': 'A Little Wordy' };
 
 // Shared "send a push notification to every device a user has registered"
 // helper (users/{uid}.pushTokens) — used by turn notifications and the
@@ -37,4 +37,35 @@ export async function sendPushToUid({ db, FieldValue, messaging, uid, notificati
   } catch (err) {
     console.error('[sendPushToUid] failed to notify', uid, err);
   }
+}
+
+// Called once a game has just dealt/started (Love Letter's startGame,
+// A Little Wordy's dealTiles) — records a game_started activity entry for
+// every participant, and pushes a "Game starting!" notification to
+// everyone EXCEPT `notifyUid` (whoever's turn it already is — they get the
+// more specific "It's your turn!" push from sendPushToUid separately, so
+// this skips them to avoid a redundant back-to-back push. Pass `null` if
+// no one has a specific "your turn" push already queued.
+export async function notifyGameStarted({ db, FieldValue, messaging, room, roomId, turnOrder, notifyUid }) {
+  const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
+  await Promise.all(
+    turnOrder.map(async (participantUid) => {
+      await db.collection(`users/${participantUid}/activity`).doc().set({
+        type: 'game_started',
+        gameType: room.gameType,
+        roomId,
+        roomCode: room.code,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      if (participantUid === notifyUid) return;
+      await sendPushToUid({
+        db,
+        FieldValue,
+        messaging,
+        uid: participantUid,
+        notification: { title: 'Game starting!', body: `${gameName} in Room ${room.code} is starting now.` },
+        link: `${SITE_ORIGIN}/rooms/${roomId}`,
+      });
+    })
+  );
 }

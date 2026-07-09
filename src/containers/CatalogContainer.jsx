@@ -34,6 +34,7 @@ export function CatalogContainer() {
           {games.map((game) => (
             <CatalogCard
               key={game.id}
+              gameType={game.id}
               name={game.displayName || game.id}
               range={playerRange(game)}
               available={Boolean(game.active)}

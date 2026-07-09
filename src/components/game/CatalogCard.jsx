@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogCard.css';
 
-export function CatalogCard({ name, range, available, stripeColor, imageUrl }) {
+export function CatalogCard({ gameType, name, range, available, stripeColor, imageUrl }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(imageUrl) && !imageFailed;
 
@@ -24,7 +24,7 @@ export function CatalogCard({ name, range, available, stripeColor, imageUrl }) {
         <div className="catalog-card__name">{name}</div>
         <div className="catalog-card__range">{range}</div>
         {available ? (
-          <Link className="catalog-card__play-button" to="/rooms/new">
+          <Link className="catalog-card__play-button" to={`/rooms/new/${gameType}`}>
             Play Now
           </Link>
         ) : (

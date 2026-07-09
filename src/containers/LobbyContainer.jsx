@@ -10,6 +10,7 @@ import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
 import { usePresenceMap } from '../hooks/usePresenceMap.js';
 import { useFollowing } from '../hooks/useFollowing.js';
 import { leaveRoom, startGame, joinRoomById, inviteToRoom } from '../utils/rooms.js';
+import { dealTiles } from '../utils/wordyGameplay.js';
 import { colorForId } from '../utils/colors.js';
 import './LobbyContainer.css';
 
@@ -69,7 +70,11 @@ export function LobbyContainer({ room }) {
     setStarting(true);
     setError(null);
     try {
-      await startGame({ roomId: room.id });
+      if (room.gameType === 'a-little-wordy') {
+        await dealTiles({ roomId: room.id });
+      } else {
+        await startGame({ roomId: room.id });
+      }
     } catch (err) {
       console.error('[LobbyContainer] failed to start game', err);
       setError("Couldn't start the game — try again.");

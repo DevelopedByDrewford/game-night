@@ -34,7 +34,7 @@ function AppShell() {
             <Route path="/settings" element={<SettingsContainer />} />
           </Route>
 
-          <Route path="/rooms/new" element={<CreateRoomContainer />} />
+          <Route path="/rooms/new/:gameType" element={<CreateRoomContainer />} />
           <Route path="/rooms/:roomId" element={<RoomContainer />} />
         </Route>
 

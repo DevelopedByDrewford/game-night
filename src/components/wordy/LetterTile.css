@@ -1,0 +1,49 @@
+.letter-tile {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--color-ink-on-surface);
+  padding: 0;
+  cursor: default;
+}
+
+button.letter-tile {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+button.letter-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-button);
+}
+
+button.letter-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.letter-tile--selected {
+  border-color: var(--color-terracotta);
+  box-shadow: 0 0 0 2px var(--color-terracotta);
+}
+
+.letter-tile--face-down {
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--color-terracotta) 20%, var(--color-surface)),
+    color-mix(in srgb, var(--color-terracotta) 20%, var(--color-surface)) 6px,
+    var(--color-surface) 6px,
+    var(--color-surface) 12px
+  );
+}
+
+.letter-tile__letter {
+  line-height: 1;
+}
