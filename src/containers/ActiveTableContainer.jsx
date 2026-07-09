@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
@@ -6,6 +6,7 @@ import { OpponentSeat } from '../components/game/OpponentSeat.jsx';
 import { PlayingCard } from '../components/game/PlayingCard.jsx';
 import { DiscardPileRow } from '../components/game/DiscardPileRow.jsx';
 import { DiscardsModal } from '../components/game/DiscardsModal.jsx';
+import { TurnReviewOverlay } from '../components/game/TurnReviewOverlay.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
 import { RulesReferencePanel } from '../components/game/RulesReferencePanel.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -33,12 +34,32 @@ const Layout = styled.div`
 
   @media (max-width: 640px) {
     padding-bottom: 90px;
+    /* TableColumn's 420px min-width otherwise still competes for space on
+       the same flex line as the Action Log/Rules panels (removing just the
+       min-width isn't enough — flex-basis from the flex:2 shorthand wins
+       over width), squeezing the hand panel down to a sliver. Stack
+       everything full-width instead. */
+    flex-direction: column;
   }
 `;
 
 const TableColumn = styled.div`
   flex: 2;
   min-width: 420px;
+
+  @media (max-width: 640px) {
+    min-width: 0;
+    width: 100%;
+  }
+`;
+
+// Positioned ancestor for TurnReviewOverlay — on desktop the overlay covers
+// exactly this area (opponents + turn indicator/deck), leaving the hand,
+// action log, and rules panel visible; on mobile the overlay goes full-page
+// instead (see its own breakpoint), so this relative positioning is inert
+// there.
+const TableTop = styled.div`
+  position: relative;
 `;
 
 const Opponents = styled.div`
@@ -174,6 +195,29 @@ export function ActiveTableContainer({ room }) {
   const [ending, setEnding] = useState(false);
   const [discardsModalOpen, setDiscardsModalOpen] = useState(false);
 
+  // Turn review: `lastSeenSeq` (persisted per room in localStorage so a
+  // page refresh doesn't replay the whole game) marks everything the
+  // player has already reviewed. Anything newer is queued up for the
+  // TurnReviewOverlay — usually just the turn that was just played, but
+  // can be several if they were away, hence Previous/Next/Skip.
+  const lastSeenKey = `love-letter:lastSeenLogSeq:${room.id}`;
+  const [lastSeenSeq, setLastSeenSeq] = useState(() => {
+    const stored = localStorage.getItem(lastSeenKey);
+    return stored === null ? null : Number(stored);
+  });
+  const [reviewIndex, setReviewIndex] = useState(0);
+
+  // First time this room's log ever loads with no stored `lastSeenSeq`,
+  // treat everything already there as seen (a fresh join shouldn't replay
+  // the whole game's history) — only entries appended after this point
+  // queue up for review.
+  useEffect(() => {
+    if (lastSeenSeq !== null || entries.length === 0) return;
+    const maxSeq = entries[entries.length - 1].seq;
+    setLastSeenSeq(maxSeq);
+    localStorage.setItem(lastSeenKey, String(maxSeq));
+  }, [entries, lastSeenSeq, lastSeenKey]);
+
   const isHost = user?.uid === room.hostUid;
 
   if (stateLoading || handLoading || !state) {
@@ -283,6 +327,25 @@ export function ActiveTableContainer({ room }) {
     }
   }
 
+  function closeReview() {
+    const maxSeq = entries.length ? entries[entries.length - 1].seq : lastSeenSeq;
+    setLastSeenSeq(maxSeq);
+    localStorage.setItem(lastSeenKey, String(maxSeq));
+    setReviewIndex(0);
+  }
+
+  function handleReviewNext() {
+    if (reviewIndex < pendingEntries.length - 1) {
+      setReviewIndex((i) => i + 1);
+    } else {
+      closeReview();
+    }
+  }
+
+  function handleReviewPrevious() {
+    setReviewIndex((i) => Math.max(0, i - 1));
+  }
+
   const opponents = room.players
     .filter((p) => p.uid !== user.uid)
     .map((p) => {
@@ -320,6 +383,9 @@ export function ActiveTableContainer({ room }) {
     isYou: p.uid === user.uid,
   }));
 
+  const pendingEntries = lastSeenSeq === null ? [] : entries.filter((e) => e.seq > lastSeenSeq);
+  const reviewIndexClamped = Math.min(reviewIndex, Math.max(0, pendingEntries.length - 1));
+
   return (
     <>
       <RoomChromeHeader
@@ -329,28 +395,42 @@ export function ActiveTableContainer({ room }) {
       />
       <Layout>
         <TableColumn>
-          <Opponents>
-            {opponents.map((op) => (
-              <OpponentSeat key={op.name} {...op} />
-            ))}
-          </Opponents>
+          <TableTop>
+            <Opponents>
+              {opponents.map((op) => (
+                <OpponentSeat key={op.name} {...op} />
+              ))}
+            </Opponents>
 
-          <TurnArea>
-            <TurnIndicator>
-              {myChancellorPending
-                ? '▶ Choose a card to keep…'
-                : myTurn
-                ? '▶ Your turn'
-                : `▶ ${nameForUid(state.turnUid)}'s turn`}
-            </TurnIndicator>
-            <DeckRow>
-              <PlayingCard width={44} height={60} radius={8} stripe="#7C8C4A" stripeSize={6} backImageUrl={backImageFor()} />
-              <DeckCount>Deck: {state.deckCount} left</DeckCount>
-            </DeckRow>
-            <TokenCount>
-              Round {state.roundNumber} · You: {myTokens}/{state.tokensToWin} tokens
-            </TokenCount>
-          </TurnArea>
+            <TurnArea>
+              <TurnIndicator>
+                {myChancellorPending
+                  ? '▶ Choose a card to keep…'
+                  : myTurn
+                  ? '▶ Your turn'
+                  : `▶ ${nameForUid(state.turnUid)}'s turn`}
+              </TurnIndicator>
+              <DeckRow>
+                <PlayingCard width={44} height={60} radius={8} stripe="#7C8C4A" stripeSize={6} backImageUrl={backImageFor()} />
+                <DeckCount>Deck: {state.deckCount} left</DeckCount>
+              </DeckRow>
+              <TokenCount>
+                Round {state.roundNumber} · You: {myTokens}/{state.tokensToWin} tokens
+              </TokenCount>
+            </TurnArea>
+
+            {pendingEntries.length > 0 && (
+              <TurnReviewOverlay
+                entries={pendingEntries}
+                index={reviewIndexClamped}
+                room={room}
+                viewerUid={user.uid}
+                onPrevious={handleReviewPrevious}
+                onNext={handleReviewNext}
+                onSkip={closeReview}
+              />
+            )}
+          </TableTop>
 
           <HandPanel>
             <HandLabel>YOUR HAND — PRIVATE</HandLabel>

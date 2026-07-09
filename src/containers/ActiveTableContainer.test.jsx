@@ -10,7 +10,7 @@ import { playCard } from '../utils/gameplay.js';
 vi.mock('../hooks/useAuth.jsx', () => ({ useAuth: () => ({ user: { uid: 'me' } }) }));
 vi.mock('../hooks/useRoomPresenceMap.js', () => ({ useRoomPresenceMap: () => ({ opp: true }) }));
 vi.mock('../hooks/useRoomLog.js', () => ({
-  useRoomLog: () => ({ entries: [{ id: '1', message: 'Round 1 dealt.' }], loading: false }),
+  useRoomLog: () => ({ entries: fakeLogEntries, loading: false }),
 }));
 vi.mock('../utils/rooms.js', () => ({ endGameEarly: vi.fn() }));
 vi.mock('../utils/gameplay.js', () => ({ playCard: vi.fn().mockResolvedValue({ success: true, peekedCard: null }) }));
@@ -41,6 +41,7 @@ const fakeState = {
 };
 
 let fakeHand = ['guard', 'handmaid'];
+let fakeLogEntries = [{ id: '1', seq: 0, message: 'Round 1 dealt.' }];
 vi.mock('../hooks/useRoomState.js', () => ({ useRoomState: () => ({ state: fakeState, loading: false }) }));
 vi.mock('../hooks/useHand.js', () => ({ useHand: () => ({ hand: fakeHand, loading: false }) }));
 
@@ -67,6 +68,8 @@ function renderTable() {
 describe('ActiveTableContainer', () => {
   beforeEach(() => {
     fakeHand = ['guard', 'handmaid'];
+    fakeLogEntries = [{ id: '1', seq: 0, message: 'Round 1 dealt.' }];
+    localStorage.clear();
     vi.clearAllMocks();
   });
 
@@ -143,5 +146,61 @@ describe('ActiveTableContainer', () => {
 
     expect(screen.getByText('Discard piles')).toBeInTheDocument();
     expect(screen.getByText('Me (You)')).toBeInTheDocument();
+  });
+
+  it('does not show a turn review overlay on a fresh join (no prior lastSeenSeq)', () => {
+    renderTable();
+    expect(screen.queryByText(/TURN \d+ OF \d+/)).not.toBeInTheDocument();
+  });
+
+  describe('turn review overlay', () => {
+    beforeEach(() => {
+      fakeLogEntries = [
+        { id: '1', seq: 0, message: 'Round 1 dealt.' },
+        { id: '2', seq: 1, message: 'Me played Guard on Opp, guessed priest — wrong.' },
+        { id: '3', seq: 2, message: 'Opp played Priest on Me.' },
+      ];
+      localStorage.setItem('love-letter:lastSeenLogSeq:room1', '0');
+    });
+
+    it('shows pending turns with "You" substituted for the local player, Previous disabled first', async () => {
+      renderTable();
+
+      expect(await screen.findByText('TURN 1 OF 2')).toBeInTheDocument();
+      expect(
+        screen.getByText((_, el) => el.textContent === 'You played Guard on Opp, guessed priest — wrong.')
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '◀ Previous' })).toBeDisabled();
+    });
+
+    it('Next/Previous step through pending turns, and Skip closes the overlay', async () => {
+      renderTable();
+      await screen.findByText('TURN 1 OF 2');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+      expect(screen.getByText('TURN 2 OF 2')).toBeInTheDocument();
+      // "Opp played Priest on Me." appears both in the overlay and the
+      // (always-visible) ActionLogPanel — just confirm it rendered somewhere.
+      expect(
+        screen.getAllByText((_, el) => el.textContent === 'Opp played Priest on Me.').length
+      ).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: '◀ Previous' }));
+      expect(screen.getByText('TURN 1 OF 2')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Skip' }));
+      expect(screen.queryByText(/TURN \d+ OF \d+/)).not.toBeInTheDocument();
+      expect(localStorage.getItem('love-letter:lastSeenLogSeq:room1')).toBe('2');
+    });
+
+    it('clicking Done on the last pending turn closes the overlay', async () => {
+      renderTable();
+      await screen.findByText('TURN 1 OF 2');
+      await userEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+      expect(screen.queryByText(/TURN \d+ OF \d+/)).not.toBeInTheDocument();
+    });
   });
 });
