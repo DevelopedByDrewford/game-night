@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import { useParams } from 'react-router-dom';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -8,6 +9,7 @@ import { useProfile } from '../hooks/useProfile.js';
 import { useGameCatalog } from '../hooks/useGameCatalog.js';
 import { useFollowing } from '../hooks/useFollowing.js';
 import { updateProfile } from '../utils/profile.js';
+import { followUser } from '../utils/follows.js';
 import { colorForId } from '../utils/colors.js';
 
 const TopRow = styled.div`
@@ -357,9 +359,34 @@ function EditProfileForm({ profile, onCancel, onSaved }) {
   );
 }
 
-export function ProfileContainer() {
+function FollowBackButton({ targetUid }) {
   const { user } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  const { friends } = useFollowing();
+  const [busy, setBusy] = useState(false);
+  const alreadyFollowing = friends.some((f) => f.uid === targetUid);
+
+  async function handleClick() {
+    setBusy(true);
+    try {
+      await followUser({ uid: user.uid, targetUid });
+    } catch (err) {
+      console.error('[ProfileContainer] failed to follow', err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Button $variant="outline" disabled={alreadyFollowing || busy} onClick={handleClick}>
+      {alreadyFollowing ? 'Following' : 'Follow'}
+    </Button>
+  );
+}
+
+export function ProfileContainer() {
+  const { uid: routeUid } = useParams();
+  const { user } = useAuth();
+  const { profile, loading: profileLoading, isOwnProfile } = useProfile(routeUid);
   const { games, loading: catalogLoading } = useGameCatalog();
   const { friends } = useFollowing();
   const [editing, setEditing] = useState(false);
@@ -372,8 +399,17 @@ export function ProfileContainer() {
     );
   }
 
-  const displayName = profile?.displayName || user?.displayName || 'Player';
-  const avatarColor = colorForId(user?.uid || '');
+  if (!profile && !isOwnProfile) {
+    return (
+      <PageWrap $maxWidth="640px" $padding="44px 32px">
+        <StatusText>That player couldn't be found.</StatusText>
+      </PageWrap>
+    );
+  }
+
+  const targetUid = routeUid || user?.uid;
+  const displayName = profile?.displayName || (isOwnProfile ? user?.displayName : null) || 'Player';
+  const avatarColor = colorForId(targetUid || '');
 
   if (editing) {
     return (
@@ -387,9 +423,13 @@ export function ProfileContainer() {
   return (
     <PageWrap $maxWidth="640px" $padding="44px 32px">
       <TopRow>
-        <Button $variant="outline" onClick={() => setEditing(true)}>
-          Edit Profile
-        </Button>
+        {isOwnProfile ? (
+          <Button $variant="outline" onClick={() => setEditing(true)}>
+            Edit Profile
+          </Button>
+        ) : (
+          <FollowBackButton targetUid={targetUid} />
+        )}
       </TopRow>
 
       <Hero $bannerUrl={profile?.bannerUrl}>
@@ -406,8 +446,14 @@ export function ProfileContainer() {
             {profile?.pronouns && <Pronouns>({profile.pronouns})</Pronouns>}
           </NameRow>
           <Meta>
-            Joined {formatJoinDate(profile?.createdAt)} · {friends.length} friend
-            {friends.length === 1 ? '' : 's'}
+            Joined {formatJoinDate(profile?.createdAt)}
+            {isOwnProfile && (
+              <>
+                {' '}
+                · {friends.length} friend
+                {friends.length === 1 ? '' : 's'}
+              </>
+            )}
           </Meta>
           {profile?.location && <Location>📍 {profile.location}</Location>}
         </div>
@@ -422,11 +468,13 @@ export function ProfileContainer() {
         </div>
       )}
 
-      <IdRow>
-        Your user ID (share this so friends can follow you):
-        <IdValue>{user?.uid}</IdValue>
-        <CopyButton onClick={() => navigator.clipboard?.writeText(user?.uid || '')}>Copy</CopyButton>
-      </IdRow>
+      {isOwnProfile && (
+        <IdRow>
+          Your user ID (share this so friends can follow you):
+          <IdValue>{user?.uid}</IdValue>
+          <CopyButton onClick={() => navigator.clipboard?.writeText(user?.uid || '')}>Copy</CopyButton>
+        </IdRow>
+      )}
 
       <StatsTitle>Stats by game</StatsTitle>
       <StatsList>

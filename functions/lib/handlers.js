@@ -1,6 +1,7 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { buildDeck, bracketForPlayerCount, isValidRulesetForPlayerCount, TOKENS_TO_WIN } from './deck.js';
 import { shuffle } from './shuffle.js';
+import { sendPushToUid, SITE_ORIGIN } from './push.js';
 import {
   dealSetup,
   isLegalPlay,
@@ -9,10 +10,6 @@ import {
   nextActiveUid,
   spyBonusUid,
 } from './rules.js';
-
-// Personal-project single deployment target — update if the site ever
-// moves domains. Only used to build the deep link a turn-notification opens.
-const SITE_ORIGIN = 'https://game-night.drewford.dev';
 
 // functions/ is a separate deployable from src/ (see scripts/seedCatalog.mjs
 // for the frontend's copy of these same display names) — duplicated rather
@@ -79,39 +76,40 @@ export function createHandlers({ db, FieldValue, messaging }) {
     });
   }
 
-  // Pushes a "your turn" notification to every device `uid` has registered
-  // (users/{uid}.pushTokens). Always called AFTER a transaction has
-  // committed, never from inside one — Firestore transactions can retry on
-  // contention, and a network send inside one risks firing twice. Never
-  // throws; a failed/undeliverable push shouldn't fail the game move that
-  // triggered it.
+  // Pushes a "your turn" notification to every device `uid` has registered.
+  // Always called AFTER a transaction has committed, never from inside one
+  // — Firestore transactions can retry on contention, and a network send
+  // inside one risks firing twice.
   async function sendTurnNotification({ roomId, room, uid }) {
-    if (!uid || !messaging) return;
-    try {
-      const userSnap = await db.doc(`users/${uid}`).get();
-      const tokens = userSnap.exists ? userSnap.data()?.pushTokens || [] : [];
-      if (tokens.length === 0) return;
+    const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
+    await sendPushToUid({
+      db,
+      FieldValue,
+      messaging,
+      uid,
+      notification: {
+        title: "It's your turn!",
+        body: `It's your move in ${gameName} — Room ${room.code}.`,
+      },
+      link: `${SITE_ORIGIN}/rooms/${roomId}`,
+    });
+  }
 
-      const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
-      const response = await messaging.sendEachForMulticast({
-        tokens,
-        notification: {
-          title: "It's your turn!",
-          body: `It's your move in ${gameName} — Room ${room.code}.`,
-        },
-        webpush: {
-          fcmOptions: { link: `${SITE_ORIGIN}/rooms/${roomId}` },
-        },
+  const activityCollection = (uid) => db.collection(`users/${uid}/activity`);
+
+  // Records a game_won/game_lost entry in every participant's activity
+  // feed — called from finishTurn's game-end branch, inside the same
+  // transaction as the stats increment right above it so both land
+  // atomically (or neither does, if the transaction retries/fails).
+  function logGameActivity(tx, { room, roomId, participantUids, gameWinners }) {
+    for (const participantUid of participantUids) {
+      tx.set(activityCollection(participantUid).doc(), {
+        type: gameWinners.includes(participantUid) ? 'game_won' : 'game_lost',
+        gameType: room.gameType,
+        roomId,
+        roomCode: room.code,
+        createdAt: FieldValue.serverTimestamp(),
       });
-
-      const staleTokens = (response?.responses || [])
-        .map((r, i) => (!r.success && r.error?.code === 'messaging/registration-token-not-registered' ? tokens[i] : null))
-        .filter(Boolean);
-      if (staleTokens.length > 0) {
-        await db.doc(`users/${uid}`).update({ pushTokens: FieldValue.arrayRemove(...staleTokens) });
-      }
-    } catch (err) {
-      console.error('[sendTurnNotification] failed to notify', uid, err);
     }
   }
 
@@ -231,6 +229,7 @@ export function createHandlers({ db, FieldValue, messaging }) {
           { merge: true }
         );
       }
+      logGameActivity(tx, { room, roomId, participantUids: state.turnOrder, gameWinners });
 
       tx.update(stateDoc(roomId), {
         phase: 'gameEnd',

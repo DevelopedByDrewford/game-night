@@ -6,9 +6,14 @@ import { Button } from '../components/ui/Button.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { GameCard } from '../components/game/GameCard.jsx';
 import { EmptyStateCard } from '../components/game/EmptyStateCard.jsx';
+import { ActivityFeed } from '../components/game/ActivityFeed.jsx';
 import { useMyRooms } from '../hooks/useMyRooms.js';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useActivity } from '../hooks/useActivity.js';
+import { useFollowing } from '../hooks/useFollowing.js';
+import { useGameCatalog } from '../hooks/useGameCatalog.js';
 import { joinRoomByCode, deleteRoom } from '../utils/rooms.js';
+import { followUser } from '../utils/follows.js';
 import { colorForId } from '../utils/colors.js';
 import { catalogArtFor } from '../utils/catalogArt.js';
 
@@ -134,6 +139,24 @@ export function DashboardContainer() {
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, code }
   const [deleting, setDeleting] = useState(false);
 
+  const { entries: activity, loading: activityLoading } = useActivity();
+  const { friends } = useFollowing();
+  const { games } = useGameCatalog();
+  const followingUids = new Set(friends.map((f) => f.uid));
+  const gameNames = Object.fromEntries(games.map((g) => [g.id, g.displayName || g.id]));
+  const [followBackBusyUid, setFollowBackBusyUid] = useState(null);
+
+  async function handleFollowBack(targetUid) {
+    setFollowBackBusyUid(targetUid);
+    try {
+      await followUser({ uid: user.uid, targetUid });
+    } catch (err) {
+      console.error('[DashboardContainer] failed to follow back', err);
+    } finally {
+      setFollowBackBusyUid(null);
+    }
+  }
+
   async function handleJoinSubmit(e) {
     e.preventDefault();
     if (!joinCode.trim()) return;
@@ -230,6 +253,15 @@ export function DashboardContainer() {
           <EmptyStateCard />
         </Grid>
       )}
+
+      <ActivityFeed
+        entries={activity}
+        loading={activityLoading}
+        gameNames={gameNames}
+        followingUids={followingUids}
+        followBackBusyUid={followBackBusyUid}
+        onFollowBack={handleFollowBack}
+      />
 
       {deleteTarget && (
         <Modal onClose={() => !deleting && setDeleteTarget(null)}>

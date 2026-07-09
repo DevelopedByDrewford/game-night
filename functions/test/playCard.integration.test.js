@@ -76,7 +76,7 @@ async function playFullGame({ roomId, playerUids, ruleset = 'classic' }, { setDo
 
 describe('full game playthrough (fake Firestore)', () => {
   it('plays a 2-player game to completion and records stats', async () => {
-    const { db, getDoc, setDoc } = createFakeFirestore();
+    const { db, getDoc, setDoc, getCollection } = createFakeFirestore();
     const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['alice', 'bob'];
 
@@ -93,6 +93,19 @@ describe('full game playthrough (fake Firestore)', () => {
     const winners = playerUids.filter((u) => state.tokens[u] >= state.tokensToWin);
     for (const uid of winners) {
       expect(getDoc(`users/${uid}`).stats['love-letter'].wins).toBe(1);
+    }
+
+    // Every participant gets a game_won/game_lost activity entry, matching
+    // whether they actually won.
+    for (const uid of playerUids) {
+      const activity = getCollection(`users/${uid}/activity`);
+      expect(activity).toHaveLength(1);
+      expect(activity[0]).toMatchObject({
+        type: winners.includes(uid) ? 'game_won' : 'game_lost',
+        gameType: 'love-letter',
+        roomId: 'room2p',
+        roomCode: 'TEST',
+      });
     }
   });
 

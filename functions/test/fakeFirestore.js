@@ -103,6 +103,14 @@ export function createFakeFirestore() {
     db,
     getDoc: (path) => store.get(path),
     setDoc: (path, data) => store.set(path, data),
+    // For collections written with auto-generated ids (e.g. an activity or
+    // log feed) where a test can't predict the doc path up front — returns
+    // every doc directly under `prefix` (one path segment deep, matching
+    // how these collections are actually used) as { id, ...data }.
+    getCollection: (prefix) =>
+      [...store.entries()]
+        .filter(([path]) => path.startsWith(`${prefix}/`) && !path.slice(prefix.length + 1).includes('/'))
+        .map(([path, data]) => ({ id: path.slice(prefix.length + 1), ...data })),
   };
 }
 

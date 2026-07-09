@@ -32,6 +32,7 @@ function AppShell() {
             <Route path="/catalog" element={<CatalogContainer />} />
             <Route path="/friends" element={<FriendsContainer />} />
             <Route path="/profile" element={<ProfileContainer />} />
+            <Route path="/profile/:uid" element={<ProfileContainer />} />
             <Route path="/settings" element={<SettingsContainer />} />
           </Route>
 
