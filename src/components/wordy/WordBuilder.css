@@ -1,0 +1,37 @@
+.word-builder {
+  margin-top: 12px;
+}
+
+.word-builder__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-fainter);
+  margin: 10px 0 6px;
+}
+
+.word-builder__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.word-builder__row--rack {
+  background: rgba(46, 32, 19, 0.04);
+}
+
+.word-builder__row--word {
+  border: 1.5px dashed var(--color-terracotta);
+  background: rgba(200, 89, 47, 0.06);
+  align-items: center;
+}
+
+.word-builder__placeholder {
+  font-size: 13px;
+  color: var(--color-ink-fainter);
+  padding: 0 4px;
+}

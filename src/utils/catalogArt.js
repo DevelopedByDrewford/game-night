@@ -4,6 +4,7 @@
 // image lands at the path below.
 export const CATALOG_ART = {
   'love-letter': '/catalog-art/love-letter.png',
+  'a-little-wordy': '/catalog-art/a_little_wordy.png',
 };
 
 export function catalogArtFor(gameType) {

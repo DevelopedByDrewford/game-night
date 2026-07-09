@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
 import { LetterTile } from '../components/wordy/LetterTile.jsx';
+import { WordBuilder } from '../components/wordy/WordBuilder.jsx';
 import { ClueCard } from '../components/wordy/ClueCard.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -43,6 +44,10 @@ const CLUE_ARG_KIND = {
 
 function uniqueLetters(tiles) {
   return [...new Set([...(tiles?.vowels || []), ...(tiles?.consonants || [])])].sort();
+}
+
+function flatLetters(tiles) {
+  return [...(tiles?.vowels || []), ...(tiles?.consonants || [])];
 }
 
 export function WordyTableContainer({ room }) {
@@ -92,12 +97,10 @@ export function WordyTableContainer({ room }) {
     }
   }
 
-  async function handleSubmitWord(e) {
-    e.preventDefault();
-    if (!wordInput.trim()) return;
+  async function handleSubmitWord() {
+    if (!wordInput) return;
     await runAction(async () => {
-      await submitSecretWord({ roomId: room.id, word: wordInput.trim() });
-      setWordInput('');
+      await submitSecretWord({ roomId: room.id, word: wordInput });
     });
   }
 
@@ -123,12 +126,10 @@ export function WordyTableContainer({ room }) {
     });
   }
 
-  async function handleGuess(e) {
-    e.preventDefault();
-    if (!guessInput.trim()) return;
+  async function handleGuess() {
+    if (!guessInput) return;
     await runAction(async () => {
-      await guessWord({ roomId: room.id, guess: guessInput.trim() });
-      setGuessInput('');
+      await guessWord({ roomId: room.id, guess: guessInput });
     });
   }
 
@@ -141,12 +142,10 @@ export function WordyTableContainer({ room }) {
     });
   }
 
-  async function handleTiebreaker(e) {
-    e.preventDefault();
-    if (!tiebreakerInput.trim()) return;
+  async function handleTiebreaker() {
+    if (!tiebreakerInput) return;
     await runAction(async () => {
-      await submitTiebreakerWord({ roomId: room.id, word: tiebreakerInput.trim() });
-      setTiebreakerInput('');
+      await submitTiebreakerWord({ roomId: room.id, word: tiebreakerInput });
     });
   }
 
@@ -181,34 +180,19 @@ export function WordyTableContainer({ room }) {
           {state.phase === 'wordSubmission' && (
             <div className="wordy-table-panel">
               <div className="wordy-table-panel__title">Build your Secret Word</div>
-              <div className="wordy-table-tile-row">
-                {uniqueLetters(hand.originalTiles).length > 0 && (
-                  <>
-                    {hand.originalTiles.vowels.map((l, i) => (
-                      <LetterTile key={`v${i}`} letter={l} size={44} />
-                    ))}
-                    {hand.originalTiles.consonants.map((l, i) => (
-                      <LetterTile key={`c${i}`} letter={l} size={44} />
-                    ))}
-                  </>
-                )}
-              </div>
               {hand.secretWord ? (
                 <div className="wordy-table-helper-text">
-                  You locked in your word — waiting for {opponent?.displayName || 'your opponent'}…
+                  You locked in "{hand.secretWord}" — waiting for {opponent?.displayName || 'your opponent'}…
                 </div>
               ) : (
-                <form className="wordy-table-word-form" onSubmit={handleSubmitWord}>
-                  <input
-                    className="wordy-table-word-input"
-                    value={wordInput}
-                    onChange={(e) => setWordInput(e.target.value)}
-                    placeholder="Type a word from your tiles"
-                    maxLength={11}
-                    disabled={submitting}
-                  />
-                  <Button disabled={submitting || !wordInput.trim()}>Lock it in</Button>
-                </form>
+                <>
+                  <WordBuilder letters={flatLetters(hand.originalTiles)} onWordChange={setWordInput} disabled={submitting} tileSize={44} />
+                  <div className="wordy-table-word-form">
+                    <Button onClick={handleSubmitWord} disabled={submitting || !wordInput}>
+                      Lock it in
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -228,17 +212,19 @@ export function WordyTableContainer({ room }) {
                 You: {myTokens} tokens · {opponent?.displayName || 'Opponent'}: {opponentTokens} tokens
               </div>
 
-              <div className="wordy-table-panel">
-                <div className="wordy-table-panel__title">Your tiles (guess with these)</div>
-                <div className="wordy-table-tile-row">
-                  {hand.tilesInFront.vowels.map((l, i) => (
-                    <LetterTile key={`v${i}`} letter={l} size={40} />
-                  ))}
-                  {hand.tilesInFront.consonants.map((l, i) => (
-                    <LetterTile key={`c${i}`} letter={l} size={40} />
-                  ))}
+              {(!myTurn || state.pendingClue) && (
+                <div className="wordy-table-panel">
+                  <div className="wordy-table-panel__title">Your tiles (guess with these)</div>
+                  <div className="wordy-table-tile-row">
+                    {hand.tilesInFront.vowels.map((l, i) => (
+                      <LetterTile key={`v${i}`} letter={l} size={40} />
+                    ))}
+                    {hand.tilesInFront.consonants.map((l, i) => (
+                      <LetterTile key={`c${i}`} letter={l} size={40} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {iAmPendingResponder ? (
                 <form className="wordy-table-word-form" onSubmit={handleRhymeResponse}>
@@ -273,17 +259,15 @@ export function WordyTableContainer({ room }) {
                     </div>
                   </div>
 
-                  <form className="wordy-table-word-form" onSubmit={handleGuess}>
-                    <input
-                      className="wordy-table-word-input"
-                      value={guessInput}
-                      onChange={(e) => setGuessInput(e.target.value)}
-                      placeholder="Or guess their Secret Word"
-                      maxLength={11}
-                      disabled={submitting}
-                    />
-                    <Button disabled={submitting || !guessInput.trim()}>Guess</Button>
-                  </form>
+                  <div className="wordy-table-panel">
+                    <div className="wordy-table-panel__title">Or guess their Secret Word</div>
+                    <WordBuilder letters={flatLetters(hand.tilesInFront)} onWordChange={setGuessInput} disabled={submitting} tileSize={40} />
+                    <div className="wordy-table-word-form">
+                      <Button onClick={handleGuess} disabled={submitting || !guessInput}>
+                        Guess
+                      </Button>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <div className="wordy-table-helper-text">Waiting for {opponent?.displayName || 'opponent'}…</div>
@@ -294,25 +278,12 @@ export function WordyTableContainer({ room }) {
           {state.phase === 'tiebreaker' && (
             <div className="wordy-table-panel">
               <div className="wordy-table-panel__title">Tiebreaker! Race to spell a new 4-letter word</div>
-              <div className="wordy-table-tile-row">
-                {hand.originalTiles.vowels.map((l, i) => (
-                  <LetterTile key={`v${i}`} letter={l} size={44} />
-                ))}
-                {hand.originalTiles.consonants.map((l, i) => (
-                  <LetterTile key={`c${i}`} letter={l} size={44} />
-                ))}
+              <WordBuilder letters={flatLetters(hand.originalTiles)} onWordChange={setTiebreakerInput} disabled={submitting} tileSize={44} />
+              <div className="wordy-table-word-form">
+                <Button onClick={handleTiebreaker} disabled={submitting || tiebreakerInput.length !== 4}>
+                  Submit
+                </Button>
               </div>
-              <form className="wordy-table-word-form" onSubmit={handleTiebreaker}>
-                <input
-                  className="wordy-table-word-input"
-                  value={tiebreakerInput}
-                  onChange={(e) => setTiebreakerInput(e.target.value)}
-                  placeholder="A new 4-letter word from your tiles"
-                  maxLength={4}
-                  disabled={submitting}
-                />
-                <Button disabled={submitting || !tiebreakerInput.trim()}>Submit</Button>
-              </form>
             </div>
           )}
 
@@ -353,18 +324,11 @@ export function WordyTableContainer({ room }) {
               ))}
             </div>
           ) : (
-            <input
-              className="wordy-table-word-input"
-              value={argValue}
-              onChange={(e) => setArgValue(e.target.value)}
-              placeholder="A word built from your tiles"
-              maxLength={11}
-              disabled={submitting}
-            />
+            <WordBuilder letters={flatLetters(hand.tilesInFront)} onWordChange={setArgValue} disabled={submitting} tileSize={40} />
           )}
 
           <div className="wordy-table-modal-actions">
-            <Button onClick={handleConfirmArg} disabled={submitting || !argValue.trim()}>
+            <Button onClick={handleConfirmArg} disabled={submitting || !argValue}>
               Confirm
             </Button>
             <Button $variant="outline" onClick={() => setPendingClueId(null)} disabled={submitting}>

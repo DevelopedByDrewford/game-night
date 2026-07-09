@@ -74,22 +74,27 @@ describe('WordyTableContainer', () => {
     };
   });
 
-  it('word submission: renders own tiles and submits the typed word', async () => {
+  it('word submission: renders own tiles and builds the word by clicking tiles in order', async () => {
     renderTable();
     expect(screen.getByText('A')).toBeInTheDocument();
     expect(screen.getByText('C')).toBeInTheDocument();
 
-    await userEvent.type(screen.getByPlaceholderText(/type a word/i), 'cab');
+    // Click tiles in order to build "CAB" — the click fallback for the
+    // drag-and-drop tile rack (see WordBuilder.jsx).
+    await userEvent.click(screen.getByText('C'));
+    await userEvent.click(screen.getByText('A'));
+    await userEvent.click(screen.getByText('B'));
     await userEvent.click(screen.getByRole('button', { name: 'Lock it in' }));
 
-    expect(submitSecretWord).toHaveBeenCalledWith({ roomId: 'room1', word: 'cab' });
+    expect(submitSecretWord).toHaveBeenCalledWith({ roomId: 'room1', word: 'CAB' });
   });
 
-  it('word submission: shows a waiting message once locked in, no form', () => {
+  it('word submission: shows a waiting message with the locked word, no builder', () => {
     fakeHand.secretWord = 'CAB';
     renderTable();
     expect(screen.getByText(/waiting for Opp/i)).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/type a word/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/locked in "CAB"/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lock it in' })).not.toBeInTheDocument();
   });
 
   it('clueOrGuess: activates a no-arg clue immediately on click', async () => {
@@ -116,14 +121,16 @@ describe('WordyTableContainer', () => {
     expect(activateClue).toHaveBeenCalledWith({ roomId: 'room1', clueId: 'letter-strike', args: { letter: 'A' } });
   });
 
-  it('clueOrGuess: submits a guess', async () => {
+  it('clueOrGuess: builds and submits a guess by clicking tiles', async () => {
     fakeState = { ...fakeState, phase: 'clueOrGuess', turnUid: 'me' };
     renderTable();
 
-    await userEvent.type(screen.getByPlaceholderText(/guess their secret word/i), 'dog');
+    await userEvent.click(screen.getByText('D'));
+    await userEvent.click(screen.getByText('O'));
+    await userEvent.click(screen.getByText('G'));
     await userEvent.click(screen.getByRole('button', { name: 'Guess' }));
 
-    expect(guessWord).toHaveBeenCalledWith({ roomId: 'room1', guess: 'dog' });
+    expect(guessWord).toHaveBeenCalledWith({ roomId: 'room1', guess: 'DOG' });
   });
 
   it("clueOrGuess: shows a waiting message on the opponent's turn instead of actions", () => {
@@ -149,14 +156,17 @@ describe('WordyTableContainer', () => {
     expect(respondToRhyme).toHaveBeenCalledWith({ roomId: 'room1', word: 'blab' });
   });
 
-  it('tiebreaker: submits a new word from original tiles', async () => {
+  it('tiebreaker: builds and submits a new word from original tiles by clicking tiles', async () => {
     fakeState = { ...fakeState, phase: 'tiebreaker', turnUid: null };
     renderTable();
 
-    await userEvent.type(screen.getByPlaceholderText(/4-letter word/i), 'fade');
+    await userEvent.click(screen.getByText('F'));
+    await userEvent.click(screen.getByText('A'));
+    await userEvent.click(screen.getByText('D'));
+    await userEvent.click(screen.getByText('E'));
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }));
 
-    expect(submitTiebreakerWord).toHaveBeenCalledWith({ roomId: 'room1', word: 'fade' });
+    expect(submitTiebreakerWord).toHaveBeenCalledWith({ roomId: 'room1', word: 'FADE' });
   });
 
   it('completed: shows a win message and a Back to Dashboard button', () => {
