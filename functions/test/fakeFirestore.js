@@ -1,18 +1,44 @@
 // Minimal in-memory stand-in for the Admin SDK Firestore surface our
 // handlers actually use (doc/collection refs, transactions with
-// get/set/update, FieldValue.increment). Lets functions/lib/handlers.js run
-// unmodified in a plain vitest test — no real project, no emulator (which
-// needs a JVM this machine doesn't have) required for correctness checks.
+// get/set/update, standalone doc get/set/update, FieldValue.increment/
+// arrayUnion/arrayRemove). Lets functions/lib/handlers.js run unmodified in
+// a plain vitest test — no real project, no emulator (which needs a JVM
+// this machine doesn't have) required for correctness checks.
 function isIncrementSentinel(v) {
   return v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, '__increment');
 }
 
+function isArrayUnionSentinel(v) {
+  return v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, '__arrayUnion');
+}
+
+function isArrayRemoveSentinel(v) {
+  return v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, '__arrayRemove');
+}
+
 function isPlainObject(v) {
-  return v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !isIncrementSentinel(v);
+  return (
+    v &&
+    typeof v === 'object' &&
+    !Array.isArray(v) &&
+    !(v instanceof Date) &&
+    !isIncrementSentinel(v) &&
+    !isArrayUnionSentinel(v) &&
+    !isArrayRemoveSentinel(v)
+  );
 }
 
 function mergeValue(existing, incoming) {
   if (isIncrementSentinel(incoming)) return (existing || 0) + incoming.__increment;
+  if (isArrayUnionSentinel(incoming)) {
+    const base = Array.isArray(existing) ? existing : [];
+    const toAdd = incoming.__arrayUnion.filter((v) => !base.includes(v));
+    return [...base, ...toAdd];
+  }
+  if (isArrayRemoveSentinel(incoming)) {
+    const base = Array.isArray(existing) ? existing : [];
+    return base.filter((v) => !incoming.__arrayRemove.includes(v));
+  }
   if (isPlainObject(incoming)) {
     // Recurse even when `existing` isn't an object yet (e.g. the doc, or
     // this nested field, doesn't exist yet) — otherwise an increment
@@ -29,7 +55,26 @@ export function createFakeFirestore() {
   const store = new Map();
   let autoIdCounter = 0;
 
-  const makeRef = (path) => ({ path, __isRef: true });
+  // Refs support both transaction-scoped access (tx.get/set/update below,
+  // used for the game-move transactions) and standalone access (ref.get/
+  // set/update directly, used by sendTurnNotification which deliberately
+  // runs outside any transaction) — matches the real Admin SDK's
+  // DocumentReference, which supports both.
+  const makeRef = (path) => ({
+    path,
+    __isRef: true,
+    async get() {
+      const data = store.get(path);
+      return { exists: data !== undefined, data: () => data };
+    },
+    async set(data, opts) {
+      const existing = store.get(path);
+      store.set(path, opts?.merge ? mergeValue(existing || {}, data) : data);
+    },
+    async update(data) {
+      store.set(path, mergeValue(store.get(path) || {}, data));
+    },
+  });
 
   const db = {
     doc: (path) => makeRef(path),
@@ -64,4 +109,6 @@ export function createFakeFirestore() {
 export const fakeFieldValue = {
   increment: (n) => ({ __increment: n }),
   serverTimestamp: () => new Date(),
+  arrayUnion: (...values) => ({ __arrayUnion: values }),
+  arrayRemove: (...values) => ({ __arrayRemove: values }),
 };

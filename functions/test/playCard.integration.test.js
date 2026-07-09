@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createHandlers } from '../lib/handlers.js';
 import { createFakeFirestore, fakeFieldValue } from './fakeFirestore.js';
 import { isCountessForced, legalTargets } from '../lib/rules.js';
@@ -22,6 +22,13 @@ function makeRoom({ roomId, hostUid, playerUids, ruleset = 'classic' }) {
     players: playerUids.map((uid, seat) => ({ uid, displayName: uid, seat })),
     settings: { playerCount: playerUids.length, ruleset, autoSkipEnabled: false },
   };
+}
+
+// Default: no tokens registered anywhere, so sendTurnNotification no-ops
+// (tokens.length === 0) for every test that isn't specifically about
+// notifications — keeps the existing game-logic tests unaffected.
+function makeFakeMessaging() {
+  return { sendEachForMulticast: vi.fn().mockResolvedValue({ responses: [] }) };
 }
 
 function pickCardToPlay(hand) {
@@ -70,7 +77,7 @@ async function playFullGame({ roomId, playerUids, ruleset = 'classic' }, { setDo
 describe('full game playthrough (fake Firestore)', () => {
   it('plays a 2-player game to completion and records stats', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['alice', 'bob'];
 
     const { room, state } = await playFullGame({ roomId: 'room2p', playerUids }, { setDoc, getDoc }, handlers);
@@ -91,7 +98,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('plays a 3-player game to completion and records stats', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['alice', 'bob', 'cleo'];
 
     const { room, state } = await playFullGame({ roomId: 'room3p', playerUids }, { setDoc, getDoc }, handlers);
@@ -103,7 +110,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('rejects a second player trying to start the same room twice', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     setDoc('gameRooms/dup', makeRoom({ roomId: 'dup', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
 
     await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'dup' } });
@@ -113,7 +120,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('rejects a non-host trying to start the game', async () => {
     const { db, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     setDoc('gameRooms/r', makeRoom({ roomId: 'r', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
 
     await expect(handlers.startGame({ auth: { uid: 'bob' }, data: { roomId: 'r' } })).rejects.toThrow();
@@ -121,7 +128,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('rejects a play out of turn', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     setDoc('gameRooms/r2', makeRoom({ roomId: 'r2', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
     await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'r2' } });
 
@@ -135,7 +142,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('rejects 7+ player rooms with a clear error', async () => {
     const { db, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
     setDoc('gameRooms/big', makeRoom({ roomId: 'big', hostUid: 'a', playerUids }));
 
@@ -144,7 +151,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('accepts a 5-player room, auto-upgrading an invalid stored ruleset to extended', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['a', 'b', 'c', 'd', 'e'];
     // ruleset defaults to 'classic' via makeRoom, which is invalid for 5 —
     // startGame should fall back to 'extended' rather than reject.
@@ -156,7 +163,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('plays a 5-player extended-deck game to completion and records stats', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['a', 'b', 'c', 'd', 'e'];
 
     const { room, state } = await playFullGame(
@@ -172,7 +179,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('plays a 6-player extended-deck game to completion', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['a', 'b', 'c', 'd', 'e', 'f'];
 
     const { room, state } = await playFullGame(
@@ -187,7 +194,7 @@ describe('full game playthrough (fake Firestore)', () => {
 
   it('resolves a Chancellor play: draws 2, keeps 1, returns the rest to the bottom, and advances the turn', async () => {
     const { db, getDoc, setDoc } = createFakeFirestore();
-    const handlers = createHandlers({ db, FieldValue: fakeFieldValue });
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging: makeFakeMessaging() });
     const playerUids = ['alice', 'bob'];
     setDoc('gameRooms/chan', makeRoom({ roomId: 'chan', hostUid: 'alice', playerUids, ruleset: 'extended' }));
     await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'chan' } });
@@ -219,5 +226,95 @@ describe('full game playthrough (fake Firestore)', () => {
     // Net-neutral across the two calls: drew 2 for Chancellor, returned 2 to
     // the bottom, then dealt exactly 1 card to the next player to end the turn.
     expect(getDoc('gameRooms/chan/secret/deck').drawPile).toHaveLength(drawPileBefore.length - 1);
+  });
+});
+
+describe('turn notifications', () => {
+  it('notifies the first player when startGame deals to them', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const messaging = makeFakeMessaging();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging });
+    setDoc('users/alice', { pushTokens: ['tok-alice'] });
+    setDoc('users/bob', { pushTokens: ['tok-bob'] });
+    setDoc('gameRooms/notif1', makeRoom({ roomId: 'notif1', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
+
+    await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'notif1' } });
+
+    const firstUid = getDoc('gameRooms/notif1/state/current').turnUid;
+    expect(messaging.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(messaging.sendEachForMulticast.mock.calls[0][0].tokens).toEqual([`tok-${firstUid}`]);
+  });
+
+  it('does not send anything when the player has no registered token', async () => {
+    const { db, setDoc } = createFakeFirestore();
+    const messaging = makeFakeMessaging();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging });
+    setDoc('gameRooms/notif2', makeRoom({ roomId: 'notif2', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
+
+    await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'notif2' } });
+
+    expect(messaging.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('notifies the new turn owner when playCard passes the turn to them', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const messaging = makeFakeMessaging();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging });
+    setDoc('users/alice', { pushTokens: ['tok-alice'] });
+    setDoc('users/bob', { pushTokens: ['tok-bob'] });
+    setDoc('gameRooms/notif3', makeRoom({ roomId: 'notif3', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
+    await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'notif3' } });
+
+    const currentUid = getDoc('gameRooms/notif3/state/current').turnUid;
+    const otherUid = currentUid === 'alice' ? 'bob' : 'alice';
+    // Force an untargeted card (Handmaid) so the turn passes deterministically.
+    setDoc(`gameRooms/notif3/hands/${currentUid}`, { cards: ['handmaid', 'guard'] });
+    messaging.sendEachForMulticast.mockClear();
+
+    await handlers.playCard({
+      auth: { uid: currentUid },
+      data: { roomId: 'notif3', cardId: 'handmaid', targetUid: null, guessCardId: null },
+    });
+
+    expect(getDoc('gameRooms/notif3/state/current').turnUid).toBe(otherUid);
+    expect(messaging.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(messaging.sendEachForMulticast.mock.calls[0][0].tokens).toEqual([`tok-${otherUid}`]);
+  });
+
+  it('does not notify anyone while a Chancellor decision is pending (same player continues)', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const messaging = makeFakeMessaging();
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging });
+    setDoc('users/alice', { pushTokens: ['tok-alice'] });
+    setDoc('users/bob', { pushTokens: ['tok-bob'] });
+    setDoc('gameRooms/notif4', makeRoom({ roomId: 'notif4', hostUid: 'alice', playerUids: ['alice', 'bob'], ruleset: 'extended' }));
+    await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'notif4' } });
+
+    const firstUid = getDoc('gameRooms/notif4/state/current').turnUid;
+    setDoc(`gameRooms/notif4/hands/${firstUid}`, { cards: ['chancellor', 'guard'] });
+    messaging.sendEachForMulticast.mockClear();
+
+    await handlers.playCard({ auth: { uid: firstUid }, data: { roomId: 'notif4', cardId: 'chancellor' } });
+
+    expect(getDoc('gameRooms/notif4/state/current').phase).toBe('chancellorPending');
+    expect(messaging.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('removes a token FCM reports as unregistered', async () => {
+    const { db, getDoc, setDoc } = createFakeFirestore();
+    const messaging = {
+      sendEachForMulticast: vi.fn().mockResolvedValue({
+        responses: [{ success: false, error: { code: 'messaging/registration-token-not-registered' } }],
+      }),
+    };
+    const handlers = createHandlers({ db, FieldValue: fakeFieldValue, messaging });
+    setDoc('users/alice', { pushTokens: ['bad-token-alice'] });
+    setDoc('users/bob', { pushTokens: ['bad-token-bob'] });
+    setDoc('gameRooms/notif5', makeRoom({ roomId: 'notif5', hostUid: 'alice', playerUids: ['alice', 'bob'] }));
+
+    await handlers.startGame({ auth: { uid: 'alice' }, data: { roomId: 'notif5' } });
+
+    const firstUid = getDoc('gameRooms/notif5/state/current').turnUid;
+    expect(getDoc(`users/${firstUid}`).pushTokens).toEqual([]);
   });
 });

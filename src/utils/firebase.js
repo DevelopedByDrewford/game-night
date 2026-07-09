@@ -24,6 +24,11 @@ if (!isFirebaseConfigured) {
 }
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+// Exported (unlike auth/db/rtdb/functions below) because it's cheap/safe to
+// create regardless of config validity — src/utils/pushNotifications.js
+// needs it to lazily call getMessaging(app) only in supported, opted-in
+// contexts, never eagerly here.
+export { app };
 
 // getAuth/getFirestore/getDatabase throw synchronously on an invalid config
 // (e.g. empty apiKey), which would crash the whole React tree before it can

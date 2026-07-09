@@ -10,6 +10,10 @@ import {
   spyBonusUid,
 } from './rules.js';
 
+// Personal-project single deployment target — update if the site ever
+// moves domains. Only used to build the deep link a turn-notification opens.
+const SITE_ORIGIN = 'https://game-night.drewford.dev';
+
 function emptyMap(uids, value) {
   return Object.fromEntries(uids.map((uid) => [uid, value]));
 }
@@ -49,11 +53,12 @@ function effectiveRuleset(room, playerCount) {
 }
 
 // Takes the Admin SDK Firestore instance (or a fake with the same tx/doc
-// shape — see functions/test/fakeFirestore.js) and FieldValue, and returns
-// plain onCall handler functions (request => result). Kept separate from
-// index.js's initializeApp()/getFirestore() wiring so it's unit-testable
-// without a real Firebase project or the emulator.
-export function createHandlers({ db, FieldValue }) {
+// shape — see functions/test/fakeFirestore.js), FieldValue, and a Messaging
+// client (or a fake — { sendEachForMulticast }), and returns plain onCall
+// handler functions (request => result). Kept separate from index.js's
+// initializeApp()/getFirestore() wiring so it's unit-testable without a
+// real Firebase project or the emulator.
+export function createHandlers({ db, FieldValue, messaging }) {
   const roomDoc = (roomId) => db.doc(`gameRooms/${roomId}`);
   const stateDoc = (roomId) => db.doc(`gameRooms/${roomId}/state/current`);
   const secretDoc = (roomId) => db.doc(`gameRooms/${roomId}/secret/deck`);
@@ -69,13 +74,51 @@ export function createHandlers({ db, FieldValue }) {
     });
   }
 
+  // Pushes a "your turn" notification to every device `uid` has registered
+  // (users/{uid}.pushTokens). Always called AFTER a transaction has
+  // committed, never from inside one — Firestore transactions can retry on
+  // contention, and a network send inside one risks firing twice. Never
+  // throws; a failed/undeliverable push shouldn't fail the game move that
+  // triggered it.
+  async function sendTurnNotification({ roomId, room, uid }) {
+    if (!uid || !messaging) return;
+    try {
+      const userSnap = await db.doc(`users/${uid}`).get();
+      const tokens = userSnap.exists ? userSnap.data()?.pushTokens || [] : [];
+      if (tokens.length === 0) return;
+
+      const response = await messaging.sendEachForMulticast({
+        tokens,
+        notification: {
+          title: "It's your turn!",
+          body: `${playerName(room, uid)}, it's your move in Room ${room.code}.`,
+        },
+        webpush: {
+          fcmOptions: { link: `${SITE_ORIGIN}/rooms/${roomId}` },
+        },
+      });
+
+      const staleTokens = (response?.responses || [])
+        .map((r, i) => (!r.success && r.error?.code === 'messaging/registration-token-not-registered' ? tokens[i] : null))
+        .filter(Boolean);
+      if (staleTokens.length > 0) {
+        await db.doc(`users/${uid}`).update({ pushTokens: FieldValue.arrayRemove(...staleTokens) });
+      }
+    } catch (err) {
+      console.error('[sendTurnNotification] failed to notify', uid, err);
+    }
+  }
+
   // Shared tail for both a normal playCard turn and a Chancellor resolution
   // (resolveChancellor) — advances to the next player, or ends the round /
   // game / deals a fresh round, given the fully-resolved state of this turn.
   // `hands` must already contain every currently-alive uid's up-to-date
   // cards — no lazy reads happen in here, since Firestore transactions
   // require all reads to happen before any writes, and both call sites are
-  // responsible for front-loading their reads before calling this.
+  // responsible for front-loading their reads before calling this. Returns
+  // `{ notifyUid }` — whoever's turn just started, or null if the game just
+  // ended — for the caller to send a turn notification AFTER the
+  // transaction this runs inside of has committed.
   function finishTurn({
     tx,
     roomId,
@@ -132,7 +175,7 @@ export function createHandlers({ db, FieldValue }) {
           phase: 'playing',
           logSeq: nextLogSeq,
         });
-        return;
+        return { notifyUid: nextUid };
       }
     }
 
@@ -191,7 +234,7 @@ export function createHandlers({ db, FieldValue }) {
         logSeq: nextLogSeq,
       });
       tx.update(roomDoc(roomId), { status: 'completed', updatedAt: FieldValue.serverTimestamp() });
-      return;
+      return { notifyUid: null };
     }
 
     // Game continues — deal a fresh round. Elimination/protection reset
@@ -225,6 +268,8 @@ export function createHandlers({ db, FieldValue }) {
       phase: 'playing',
       logSeq: nextLogSeq,
     });
+
+    return { notifyUid: nextStarter };
   }
 
   async function startGame(request) {
@@ -233,7 +278,7 @@ export function createHandlers({ db, FieldValue }) {
     const { roomId } = request.data || {};
     if (!roomId) throw new HttpsError('invalid-argument', 'roomId is required.');
 
-    await db.runTransaction(async (tx) => {
+    const { firstPlayer, room } = await db.runTransaction(async (tx) => {
       const roomSnap = await tx.get(roomDoc(roomId));
       if (!roomSnap.exists) throw new HttpsError('not-found', 'Room not found.');
       const room = roomSnap.data();
@@ -295,7 +340,11 @@ export function createHandlers({ db, FieldValue }) {
       });
 
       tx.update(roomDoc(roomId), { status: 'active', updatedAt: FieldValue.serverTimestamp() });
+
+      return { firstPlayer, room };
     });
+
+    await sendTurnNotification({ roomId, room, uid: firstPlayer });
 
     return { success: true };
   }
@@ -308,7 +357,7 @@ export function createHandlers({ db, FieldValue }) {
 
     const response = { success: true, peekedCard: null };
 
-    await db.runTransaction(async (tx) => {
+    const { notifyUid, room } = await db.runTransaction(async (tx) => {
       const [roomSnap, stateSnap, secretSnap] = await Promise.all([
         tx.get(roomDoc(roomId)),
         tx.get(stateDoc(roomId)),
@@ -387,8 +436,9 @@ export function createHandlers({ db, FieldValue }) {
 
       // Chancellor: draw up to 2 cards into the caller's hand and pause the
       // turn for them to choose 1 to keep (resolveChancellor finishes it).
-      // If the deck is completely empty, Chancellor has no effect and the
-      // turn proceeds exactly like any other untargeted card below.
+      // Same player continues, so no turn notification here. If the deck is
+      // completely empty, Chancellor has no effect and the turn proceeds
+      // exactly like any other untargeted card below.
       if (cardId === 'chancellor' && drawPile.length > 0) {
         const drawn = drawPile.slice(0, 2);
         drawPile = drawPile.slice(drawn.length);
@@ -405,10 +455,10 @@ export function createHandlers({ db, FieldValue }) {
           eliminated: eliminatedMap,
           logSeq: state.logSeq + 1,
         });
-        return;
+        return { notifyUid: null, room };
       }
 
-      finishTurn({
+      const result = finishTurn({
         tx,
         roomId,
         room,
@@ -424,7 +474,10 @@ export function createHandlers({ db, FieldValue }) {
         logMessage,
         logSeq: state.logSeq,
       });
+      return { ...result, room };
     });
+
+    await sendTurnNotification({ roomId, room, uid: notifyUid });
 
     return response;
   }
@@ -435,7 +488,7 @@ export function createHandlers({ db, FieldValue }) {
     const { roomId, keepCardId } = request.data || {};
     if (!roomId || !keepCardId) throw new HttpsError('invalid-argument', 'roomId and keepCardId are required.');
 
-    await db.runTransaction(async (tx) => {
+    const { notifyUid, room } = await db.runTransaction(async (tx) => {
       const [roomSnap, stateSnap, secretSnap] = await Promise.all([
         tx.get(roomDoc(roomId)),
         tx.get(stateDoc(roomId)),
@@ -478,7 +531,7 @@ export function createHandlers({ db, FieldValue }) {
 
       const drawPile = [...secret.drawPile, ...returned];
 
-      finishTurn({
+      const result = finishTurn({
         tx,
         roomId,
         room,
@@ -494,7 +547,10 @@ export function createHandlers({ db, FieldValue }) {
         logMessage: null,
         logSeq: state.logSeq,
       });
+      return { ...result, room };
     });
+
+    await sendTurnNotification({ roomId, room, uid: notifyUid });
 
     return { success: true };
   }
