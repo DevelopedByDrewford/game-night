@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 
@@ -52,6 +53,14 @@ const Thumb = styled.div`
     ${({ theme }) => theme.colors.surface} 12px
   );
   flex: none;
+  overflow: hidden;
+`;
+
+const ThumbImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 `;
 
 const Name = styled.div`
@@ -98,7 +107,10 @@ const Badge = styled.div`
   border: 1.5px solid ${({ theme }) => theme.colors.border};
 `;
 
-export function GameCard({ to, name, subtitle = 'Love Letter', playerColors, status, statusFilled, onDelete }) {
+export function GameCard({ to, name, subtitle = 'Love Letter', playerColors, status, statusFilled, onDelete, imageUrl }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(imageUrl) && !imageFailed;
+
   return (
     <Card to={to}>
       {onDelete && (
@@ -115,7 +127,7 @@ export function GameCard({ to, name, subtitle = 'Love Letter', playerColors, sta
         </DeleteButton>
       )}
       <Header>
-        <Thumb />
+        <Thumb>{showImage && <ThumbImage src={imageUrl} alt="" onError={() => setImageFailed(true)} />}</Thumb>
         <div>
           <Name>{name}</Name>
           <Sub>{subtitle}</Sub>

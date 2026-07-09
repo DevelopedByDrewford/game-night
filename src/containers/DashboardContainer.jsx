@@ -10,6 +10,7 @@ import { useMyRooms } from '../hooks/useMyRooms.js';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { joinRoomByCode, deleteRoom } from '../utils/rooms.js';
 import { colorForId } from '../utils/colors.js';
+import { catalogArtFor } from '../utils/catalogArt.js';
 
 const Header = styled.div`
   display: flex;
@@ -222,6 +223,7 @@ export function DashboardContainer() {
                 status={status.label}
                 statusFilled={status.filled}
                 onDelete={canDelete ? () => setDeleteTarget({ id: room.id, code: room.code }) : undefined}
+                imageUrl={catalogArtFor(room.gameType)}
               />
             );
           })}
