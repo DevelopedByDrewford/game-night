@@ -28,6 +28,12 @@
   }
 }
 
+/* Positioned ancestor for TurnReviewOverlay — same pattern as
+   ActiveTableContainer.css's .table-top. */
+.wordy-table-top {
+  position: relative;
+}
+
 .wordy-table-opponent {
   display: flex;
   flex-direction: column;

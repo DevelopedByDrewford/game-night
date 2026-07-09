@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
+import { TurnReviewOverlay } from '../components/game/TurnReviewOverlay.jsx';
 import { LetterTile } from '../components/wordy/LetterTile.jsx';
 import { WordBuilder } from '../components/wordy/WordBuilder.jsx';
 import { ClueCard } from '../components/wordy/ClueCard.jsx';
@@ -68,6 +69,23 @@ export function WordyTableContainer({ room }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null); // { text, error }
   const [ending, setEnding] = useState(false);
+
+  // Turn review: same mechanism as ActiveTableContainer's — `lastSeenSeq`
+  // (persisted per room) marks everything already reviewed; anything newer
+  // queues up for TurnReviewOverlay with Previous/Next/Skip.
+  const lastSeenKey = `a-little-wordy:lastSeenLogSeq:${room.id}`;
+  const [lastSeenSeq, setLastSeenSeq] = useState(() => {
+    const stored = localStorage.getItem(lastSeenKey);
+    return stored === null ? null : Number(stored);
+  });
+  const [reviewIndex, setReviewIndex] = useState(0);
+
+  useEffect(() => {
+    if (lastSeenSeq !== null || entries.length === 0) return;
+    const maxSeq = entries[entries.length - 1].seq;
+    setLastSeenSeq(maxSeq);
+    localStorage.setItem(lastSeenKey, String(maxSeq));
+  }, [entries, lastSeenSeq, lastSeenKey]);
 
   const isHost = user?.uid === room.hostUid;
 
@@ -148,6 +166,25 @@ export function WordyTableContainer({ room }) {
     });
   }
 
+  function closeReview() {
+    const maxSeq = entries.length ? entries[entries.length - 1].seq : lastSeenSeq;
+    setLastSeenSeq(maxSeq);
+    localStorage.setItem(lastSeenKey, String(maxSeq));
+    setReviewIndex(0);
+  }
+
+  function handleReviewNext() {
+    if (reviewIndex < pendingEntries.length - 1) {
+      setReviewIndex((i) => i + 1);
+    } else {
+      closeReview();
+    }
+  }
+
+  function handleReviewPrevious() {
+    setReviewIndex((i) => Math.max(0, i - 1));
+  }
+
   async function handleEndGameEarly() {
     setEnding(true);
     try {
@@ -163,17 +200,34 @@ export function WordyTableContainer({ room }) {
   const myTokens = state.tokens[user.uid] || 0;
   const opponentTokens = state.tokens[opponentUid] || 0;
 
+  const pendingEntries = lastSeenSeq === null ? [] : entries.filter((e) => e.seq > lastSeenSeq);
+  const reviewIndexClamped = Math.min(reviewIndex, Math.max(0, pendingEntries.length - 1));
+
   return (
     <>
       <RoomChromeHeader title={`Room ${room.code}`} showEndGameEarly={isHost} onEndGameEarly={handleEndGameEarly} />
       <div className="wordy-table-layout">
         <div className="wordy-table-column">
-          <div className="wordy-table-opponent">
-            <Avatar size={56} color={colorForId(opponentUid)} showStatus online={opponentOnline} />
-            <div className="wordy-table-opponent__name">{opponent?.displayName || 'Opponent'}</div>
-            <div className="wordy-table-opponent__status">
-              {opponentOnline ? 'Online' : 'Offline'} · {opponentTokens} tokens
+          <div className="wordy-table-top">
+            <div className="wordy-table-opponent">
+              <Avatar size={56} color={colorForId(opponentUid)} showStatus online={opponentOnline} />
+              <div className="wordy-table-opponent__name">{opponent?.displayName || 'Opponent'}</div>
+              <div className="wordy-table-opponent__status">
+                {opponentOnline ? 'Online' : 'Offline'} · {opponentTokens} tokens
+              </div>
             </div>
+
+            {pendingEntries.length > 0 && (
+              <TurnReviewOverlay
+                entries={pendingEntries}
+                index={reviewIndexClamped}
+                room={room}
+                viewerUid={user.uid}
+                onPrevious={handleReviewPrevious}
+                onNext={handleReviewNext}
+                onSkip={closeReview}
+              />
+            )}
           </div>
 
           {state.phase === 'wordSubmission' && (

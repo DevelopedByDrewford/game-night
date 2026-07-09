@@ -71,6 +71,30 @@
   padding: 3px 8px;
   border-radius: var(--radius-badge-sm);
   color: var(--color-surface);
+  border: none;
+  font-family: inherit;
+}
+
+.clues-record__tag--clickable {
+  cursor: pointer;
+}
+
+.clues-record__tag--clickable:hover {
+  filter: brightness(1.1);
+}
+
+.clues-record__modal-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: #2e2013;
+  margin: 12px 0 8px;
+}
+
+.clues-record__modal-description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(46, 32, 19, 0.75);
+  margin-bottom: 20px;
 }
 
 .clues-record__tag--vanilla {

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { SegmentedControl } from '../ui/SegmentedControl.jsx';
+import { Modal } from '../ui/Modal.jsx';
+import { Button } from '../ui/Button.jsx';
 import { formatRelativeTime } from '../../utils/time.js';
-import { CLUE_DEFS } from '../../utils/wordyClues.js';
+import { CLUE_DEFS, clueDescription } from '../../utils/wordyClues.js';
 import './CluesRecord.css';
 
 const VIEW_OPTIONS = [
@@ -19,6 +21,7 @@ const VIEW_OPTIONS = [
 // since that's the word being discussed in that view.
 export function CluesRecord({ entries, viewerUid, opponentUid, myWord }) {
   const [view, setView] = useState('theirWord');
+  const [viewingClueId, setViewingClueId] = useState(null); // clue card being reviewed, read-only
 
   const relevant = entries.filter((e) => {
     if (e.kind === 'clue') return view === 'theirWord' ? e.activatorUid === viewerUid : e.activatorUid === opponentUid;
@@ -46,9 +49,13 @@ export function CluesRecord({ entries, viewerUid, opponentUid, myWord }) {
             <div className="clues-record__entry" key={entry.id}>
               {entry.kind === 'clue' ? (
                 <>
-                  <span className={`clues-record__tag clues-record__tag--${CLUE_DEFS[entry.clueId]?.category || 'vanilla'}`}>
+                  <button
+                    type="button"
+                    className={`clues-record__tag clues-record__tag--clickable clues-record__tag--${CLUE_DEFS[entry.clueId]?.category || 'vanilla'}`}
+                    onClick={() => setViewingClueId(entry.clueId)}
+                  >
                     {CLUE_DEFS[entry.clueId]?.title || entry.clueId}
-                  </span>
+                  </button>
                   <span className="clues-record__detail">{entry.message}</span>
                 </>
               ) : (
@@ -63,6 +70,17 @@ export function CluesRecord({ entries, viewerUid, opponentUid, myWord }) {
             </div>
           ))}
         </div>
+      )}
+
+      {viewingClueId && (
+        <Modal onClose={() => setViewingClueId(null)}>
+          <span className={`clues-record__tag clues-record__tag--${CLUE_DEFS[viewingClueId]?.category || 'vanilla'}`}>
+            {CLUE_DEFS[viewingClueId]?.category === 'spicy' ? 'Spicy' : 'Vanilla'}
+          </span>
+          <div className="clues-record__modal-title">{CLUE_DEFS[viewingClueId]?.title || viewingClueId}</div>
+          <div className="clues-record__modal-description">{clueDescription(viewingClueId)}</div>
+          <Button onClick={() => setViewingClueId(null)}>Close</Button>
+        </Modal>
       )}
     </div>
   );

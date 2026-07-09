@@ -36,4 +36,20 @@ describe('CluesRecord', () => {
     render(<CluesRecord entries={[]} viewerUid="me" opponentUid="opp" myWord="PLAN" />);
     expect(screen.getByText(/Nothing gathered/)).toBeInTheDocument();
   });
+
+  it('clicking a clue tag opens a read-only modal with its category, name, and description', async () => {
+    render(<CluesRecord entries={entries} viewerUid="me" opponentUid="opp" myWord="PLAN" />);
+    await userEvent.click(screen.getByText('Last Letter'));
+
+    expect(screen.getByText('Vanilla')).toBeInTheDocument();
+    expect(screen.getByText(/reveals the last letter/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText(/reveals the last letter/i)).not.toBeInTheDocument();
+  });
+
+  it('does not render a clickable tag for guess entries', () => {
+    render(<CluesRecord entries={entries} viewerUid="me" opponentUid="opp" myWord="PLAN" />);
+    expect(screen.getByText('"CAB"').closest('.clues-record__entry').querySelector('button')).not.toBeInTheDocument();
+  });
 });

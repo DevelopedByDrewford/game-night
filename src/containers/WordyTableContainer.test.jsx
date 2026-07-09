@@ -74,6 +74,7 @@ describe('WordyTableContainer', () => {
       tiebreakerWord: null,
     };
     fakeEntries = [];
+    localStorage.clear();
   });
 
   it('word submission: renders own tiles and builds the word by clicking tiles in order', async () => {
@@ -214,5 +215,45 @@ describe('WordyTableContainer', () => {
     await userEvent.click(screen.getByText('My Word'));
     expect(screen.getByText('Your word: CAB')).toBeInTheDocument();
     expect(screen.getByText('"DOG"')).toBeInTheDocument();
+  });
+
+  describe('turn review overlay', () => {
+    beforeEach(() => {
+      fakeState = { ...fakeState, phase: 'clueOrGuess', turnUid: 'me' };
+      fakeEntries = [
+        { id: '1', seq: 0, message: 'Tiles dealt — build your Secret Word!' },
+        { id: '2', seq: 1, message: 'Test announcement one.' },
+        { id: '3', seq: 2, message: 'Test announcement two.' },
+      ];
+      localStorage.setItem('a-little-wordy:lastSeenLogSeq:room1', '0');
+    });
+
+    it('shows pending entries as announcements, Previous disabled first', async () => {
+      renderTable();
+      expect(await screen.findByText('TURN 1 OF 2')).toBeInTheDocument();
+      expect(screen.getAllByText('Test announcement one.').length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: '◀ Previous' })).toBeDisabled();
+    });
+
+    it('Next steps forward and Done closes the overlay, persisting lastSeenSeq', async () => {
+      renderTable();
+      await screen.findByText('TURN 1 OF 2');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+      expect(screen.getByText('TURN 2 OF 2')).toBeInTheDocument();
+      // Also appears in the always-visible ActionLogPanel — just confirm it
+      // rendered somewhere (see ActiveTableContainer.test.jsx for the same pattern).
+      expect(screen.getAllByText('Test announcement two.').length).toBeGreaterThan(0);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+      expect(screen.queryByText(/TURN \d+ OF \d+/)).not.toBeInTheDocument();
+      expect(localStorage.getItem('a-little-wordy:lastSeenLogSeq:room1')).toBe('2');
+    });
+
+    it('does not show a review overlay on a fresh join with no stored lastSeenSeq', () => {
+      localStorage.clear();
+      renderTable();
+      expect(screen.queryByText(/TURN \d+ OF \d+/)).not.toBeInTheDocument();
+    });
   });
 });
