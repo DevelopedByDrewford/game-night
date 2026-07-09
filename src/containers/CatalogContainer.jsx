@@ -1,35 +1,8 @@
-import styled from 'styled-components';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { CatalogCard } from '../components/game/CatalogCard.jsx';
 import { useGameCatalog } from '../hooks/useGameCatalog.js';
 import { catalogArtFor } from '../utils/catalogArt.js';
-
-const Header = styled.div`
-  margin-bottom: 28px;
-`;
-
-const Title = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 46px;
-  letter-spacing: -1px;
-  margin-bottom: 6px;
-`;
-
-const Subtitle = styled.div`
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.inkFaint};
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: ${({ theme }) => theme.gap.gridWide};
-`;
-
-const StatusText = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
+import './CatalogContainer.css';
 
 function playerRange(game) {
   if (game.minPlayers && game.maxPlayers && game.minPlayers !== game.maxPlayers) {
@@ -43,22 +16,21 @@ export function CatalogContainer() {
 
   return (
     <PageWrap>
-      <Header>
-        <Title>Choose a Game</Title>
-        <Subtitle>More tables are pulling up a chair soon.</Subtitle>
-      </Header>
+      <div className="catalog-header">
+        <div className="catalog-title">Choose a Game</div>
+        <div className="catalog-subtitle">More tables are pulling up a chair soon.</div>
+      </div>
 
-      {loading && <StatusText>Loading catalog…</StatusText>}
+      {loading && <div className="catalog-status-text">Loading catalog…</div>}
 
       {!loading && games.length === 0 && (
-        <StatusText>
-          No games in the catalog yet — run the seed script (scripts/seedCatalog.mjs) against your
-          Firebase project.
-        </StatusText>
+        <div className="catalog-status-text">
+          No games in the catalog yet — run the seed script (scripts/seedCatalog.mjs) against your Firebase project.
+        </div>
       )}
 
       {!loading && games.length > 0 && (
-        <Grid>
+        <div className="catalog-grid">
           {games.map((game) => (
             <CatalogCard
               key={game.id}
@@ -69,7 +41,7 @@ export function CatalogContainer() {
               imageUrl={catalogArtFor(game.id)}
             />
           ))}
-        </Grid>
+        </div>
       )}
     </PageWrap>
   );

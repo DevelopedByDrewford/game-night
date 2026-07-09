@@ -1,0 +1,56 @@
+/*
+  Design tokens as CSS custom properties — the plain-CSS counterpart to
+  src/styles/theme.js. Components still on styled-components read theme.js
+  via ThemeProvider; components converted to plain CSS (see each
+  Component.css) read these variables instead. Both describe the exact same
+  values on purpose — keep them in sync if a token changes.
+
+  Default (no [data-theme] attribute) is dark, matching theme.js's
+  documented default. App.jsx sets data-theme on <html> from the signed-in
+  user's profile.themeMode.
+*/
+
+:root {
+  --color-ink: #f5e6c7;
+  --color-page-bg: #251b13;
+  --color-surface: #f5ecd8;
+  --color-terracotta: #c8592f;
+  --color-mustard: #e3a73e;
+  --color-avocado: #7c8c4a;
+  --color-muted: #b0a48c;
+  --color-border: rgba(245, 230, 199, 0.18);
+  --color-ink-faint: rgba(245, 230, 199, 0.6);
+  --color-ink-fainter: rgba(245, 230, 199, 0.42);
+
+  /* Cream surfaces (cards/modals/panels) stay cream in both modes, so text
+     sitting on them must stay dark regardless of --color-ink — never swap
+     this one to the dark-mode ink or it becomes illegible. */
+  --color-ink-on-surface: #2e2013;
+
+  --font-display: 'Bree Serif', serif;
+  --font-body: 'Work Sans', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius-card: 20px;
+  --radius-card-sm: 16px;
+  --radius-pill: 30px;
+  --radius-badge: 14px;
+  --radius-badge-sm: 12px;
+
+  --shadow-card: 0 12px 28px rgba(46, 32, 19, 0.14);
+  --shadow-button: 0 8px 20px rgba(46, 32, 19, 0.18);
+
+  --max-width-grid: 1100px;
+  --max-width-single: 640px;
+
+  --gap-grid: 20px;
+  --gap-grid-wide: 22px;
+}
+
+:root[data-theme='light'] {
+  --color-ink: #2e2013;
+  --color-page-bg: #e8dabf;
+  --color-border: rgba(46, 32, 19, 0.16);
+  --color-ink-faint: rgba(46, 32, 19, 0.55);
+  --color-ink-fainter: rgba(46, 32, 19, 0.4);
+}

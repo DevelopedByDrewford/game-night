@@ -1,0 +1,31 @@
+.toggle-track {
+  width: 52px;
+  height: 30px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: #e3dac6;
+  position: relative;
+  cursor: pointer;
+  flex: none;
+  transition: background 0.15s;
+}
+
+.toggle-track--on {
+  background: var(--color-avocado);
+}
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  transition: left 0.15s;
+}
+
+.toggle-thumb--on {
+  left: 22px;
+}

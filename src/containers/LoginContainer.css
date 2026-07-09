@@ -1,0 +1,64 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+}
+
+.login-card {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 44px 40px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-logo-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.login-wordmark {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: -1px;
+  color: #2e2013;
+}
+
+.login-subtitle {
+  font-size: 15px;
+  color: rgba(46, 32, 19, 0.6);
+  margin: 10px 0 30px;
+}
+
+.login-google-button {
+  width: 100%;
+  background: var(--color-terracotta);
+  color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-button);
+}
+
+.login-google-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-config-warning {
+  font-size: 12px;
+  color: rgba(46, 32, 19, 0.5);
+  margin-top: 18px;
+}

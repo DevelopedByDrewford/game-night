@@ -1,0 +1,139 @@
+.create-room-title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  letter-spacing: -1px;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 14px rgba(200, 89, 47, 0.18);
+}
+
+.create-room-subtitle {
+  font-size: 15px;
+  color: var(--color-ink-faint);
+  margin-bottom: 30px;
+}
+
+.create-room-card {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 26px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.create-room-section-label {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: #2e2013;
+}
+
+.create-room-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.create-room-stepper-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  color: #2e2013;
+}
+
+.create-room-stepper-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  width: 40px;
+  text-align: center;
+  color: #2e2013;
+}
+
+.create-room-stepper-hint {
+  font-size: 13px;
+  color: rgba(46, 32, 19, 0.55);
+}
+
+.create-room-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.create-room-toggle-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #2e2013;
+}
+
+.create-room-toggle-desc {
+  font-size: 12px;
+  color: rgba(46, 32, 19, 0.55);
+  margin-top: 2px;
+}
+
+.create-room-invite-section {
+  border-top: 2px dashed rgba(46, 32, 19, 0.3);
+  padding-top: 22px;
+}
+
+.create-room-invite-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.create-room-code {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 6px;
+  text-align: center;
+  padding: 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-page-bg);
+  font-weight: 700;
+}
+
+.create-room-small-button {
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: #2e2013;
+}
+
+.create-room-small-button--mustard {
+  background: var(--color-mustard);
+  color: #2e2013;
+}
+
+.create-room-small-button--avocado {
+  background: var(--color-avocado);
+  color: var(--color-surface);
+}
+
+.create-room-small-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.create-room-error-text {
+  font-size: 13px;
+  color: var(--color-terracotta);
+}

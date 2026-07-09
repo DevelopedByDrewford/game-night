@@ -1,0 +1,28 @@
+.logo-mark {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-mark__bar {
+  /* width/height/radius/background/opacity are all scaled off the `size`
+     prop (see Logo.jsx) — continuous values, so they stay inline style. */
+}
+
+.logo-wordmark {
+  font-family: var(--font-display);
+  color: #f5e6c7;
+  white-space: nowrap;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: default;
+}
+
+.logo-row--clickable {
+  cursor: pointer;
+}

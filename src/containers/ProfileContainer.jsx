@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
@@ -11,237 +10,7 @@ import { useFollowing } from '../hooks/useFollowing.js';
 import { updateProfile } from '../utils/profile.js';
 import { followUser } from '../utils/follows.js';
 import { colorForId } from '../utils/colors.js';
-
-const TopRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
-`;
-
-const Hero = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  margin-bottom: 20px;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 22px;
-  padding: 26px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  overflow: hidden;
-  ${({ $bannerUrl }) =>
-    $bannerUrl
-      ? `
-    background-image: linear-gradient(rgba(46,32,19,.15), rgba(46,32,19,.15)), url(${$bannerUrl});
-    background-size: cover;
-    background-position: center;
-  `
-      : `
-    background-color: #f6e9ce;
-    background-image: radial-gradient(circle, rgba(200, 89, 47, 0.18) 1.5px, transparent 1.7px),
-      radial-gradient(circle, rgba(227, 167, 62, 0.18) 1.5px, transparent 1.7px),
-      radial-gradient(circle, rgba(124, 140, 74, 0.18) 1.5px, transparent 1.7px);
-    background-size: 14px 14px, 14px 14px, 14px 14px;
-    background-position: 0 0, 5px 7px, 9px 2px;
-  `}
-`;
-
-const NameRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-`;
-
-const Name = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 38px;
-  letter-spacing: -1px;
-  color: #2e2013;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-`;
-
-const Pronouns = styled.div`
-  font-size: 15px;
-  color: rgba(46, 32, 19, 0.55);
-`;
-
-const Meta = styled.div`
-  font-size: 14px;
-  color: rgba(46, 32, 19, 0.6);
-  margin-top: 2px;
-`;
-
-const Location = styled.div`
-  font-size: 13px;
-  color: rgba(46, 32, 19, 0.55);
-  margin-top: 4px;
-`;
-
-const Bio = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.ink};
-  line-height: 1.5;
-  margin-bottom: 16px;
-  white-space: pre-wrap;
-`;
-
-const ExternalLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.terracotta};
-  text-decoration: none;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 20px;
-  padding: 6px 14px;
-  margin-bottom: 30px;
-`;
-
-const StatsTitle = styled.div`
-  font-weight: 700;
-  font-size: 16px;
-  margin-bottom: 14px;
-`;
-
-const StatsList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-`;
-
-const StatRow = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.cardSm};
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  opacity: ${({ $live }) => ($live ? 1 : 0.5)};
-  box-shadow: ${({ theme }) => theme.shadows.button};
-`;
-
-const StatThumb = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $stripe, theme }) => `repeating-linear-gradient(45deg, ${$stripe}33, ${$stripe}33 6px, ${theme.colors.surface} 6px, ${theme.colors.surface} 12px)`};
-  flex: none;
-`;
-
-const StatName = styled.div`
-  font-weight: 700;
-  font-size: 16px;
-  color: #2e2013;
-`;
-
-const StatDetail = styled.div`
-  font-size: 13px;
-  color: ${({ $live }) => (
-    $live ? 'rgba(46, 32, 19, 0.6)' : 'rgba(46, 32, 19, 0.4)'
-  )};
-`;
-
-const StatusText = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
-
-const IdRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 30px;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
-
-const IdValue = styled.span`
-  font-family: ${({ theme }) => theme.fonts.mono};
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  padding: 3px 8px;
-`;
-
-const CopyButton = styled.button`
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 10px;
-  padding: 3px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  background: transparent;
-  font-family: inherit;
-`;
-
-const EditCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.card};
-  padding: 26px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-bottom: 30px;
-`;
-
-const Field = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-`;
-
-const FieldRow = styled.div`
-  display: flex;
-  gap: 14px;
-
-  ${Field} {
-    flex: 1;
-  }
-`;
-
-const FieldLabel = styled.label`
-  font-weight: 700;
-  font-size: 13px;
-  color: #2e2013;
-`;
-
-const inputStyles = `
-  font-family: inherit;
-  font-size: 14px;
-  padding: 10px 14px;
-  border-radius: 14px;
-`;
-
-const TextInput = styled.input`
-  ${inputStyles}
-  border: 1.5px solid rgba(46, 32, 19, 0.16);
-  background: ${({ theme }) => theme.colors.pageBg};
-`;
-
-const TextArea = styled.textarea`
-  ${inputStyles}
-  border: 1.5px solid rgba(46, 32, 19, 0.16);
-  background: ${({ theme }) => theme.colors.pageBg};
-  resize: vertical;
-  min-height: 70px;
-`;
-
-const EditActions = styled.div`
-  display: flex;
-  gap: 10px;
-`;
-
-const ErrorText = styled.div`
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.terracotta};
-`;
+import './ProfileContainer.css';
 
 function formatJoinDate(timestamp) {
   if (!timestamp?.toDate) return 'recently';
@@ -301,61 +70,85 @@ function EditProfileForm({ profile, onCancel, onSaved }) {
   }
 
   return (
-    <EditCard as="form" onSubmit={handleSave}>
-      <FieldRow>
-        <Field>
-          <FieldLabel>Display name</FieldLabel>
-          <TextInput value={form.displayName} onChange={set('displayName')} maxLength={40} />
-        </Field>
-        <Field>
-          <FieldLabel>Pronouns</FieldLabel>
-          <TextInput value={form.pronouns} onChange={set('pronouns')} placeholder="she/her" maxLength={30} />
-        </Field>
-      </FieldRow>
+    <form className="profile-edit-card" onSubmit={handleSave}>
+      <div className="profile-field-row">
+        <div className="profile-field">
+          <label className="profile-field-label">Display name</label>
+          <input className="profile-text-input" value={form.displayName} onChange={set('displayName')} maxLength={40} />
+        </div>
+        <div className="profile-field">
+          <label className="profile-field-label">Pronouns</label>
+          <input
+            className="profile-text-input"
+            value={form.pronouns}
+            onChange={set('pronouns')}
+            placeholder="she/her"
+            maxLength={30}
+          />
+        </div>
+      </div>
 
-      <Field>
-        <FieldLabel>Location</FieldLabel>
-        <TextInput value={form.location} onChange={set('location')} placeholder="Portland, OR" maxLength={60} />
-      </Field>
+      <div className="profile-field">
+        <label className="profile-field-label">Location</label>
+        <input
+          className="profile-text-input"
+          value={form.location}
+          onChange={set('location')}
+          placeholder="Portland, OR"
+          maxLength={60}
+        />
+      </div>
 
-      <Field>
-        <FieldLabel>Bio</FieldLabel>
-        <TextArea value={form.bio} onChange={set('bio')} maxLength={280} placeholder="A little about you…" />
-      </Field>
+      <div className="profile-field">
+        <label className="profile-field-label">Bio</label>
+        <textarea
+          className="profile-text-area"
+          value={form.bio}
+          onChange={set('bio')}
+          maxLength={280}
+          placeholder="A little about you…"
+        />
+      </div>
 
-      <FieldRow>
-        <Field>
-          <FieldLabel>Avatar image URL</FieldLabel>
-          <TextInput value={form.avatarUrl} onChange={set('avatarUrl')} placeholder="https://…" />
-        </Field>
-        <Field>
-          <FieldLabel>Banner image URL</FieldLabel>
-          <TextInput value={form.bannerUrl} onChange={set('bannerUrl')} placeholder="https://…" />
-        </Field>
-      </FieldRow>
+      <div className="profile-field-row">
+        <div className="profile-field">
+          <label className="profile-field-label">Avatar image URL</label>
+          <input className="profile-text-input" value={form.avatarUrl} onChange={set('avatarUrl')} placeholder="https://…" />
+        </div>
+        <div className="profile-field">
+          <label className="profile-field-label">Banner image URL</label>
+          <input className="profile-text-input" value={form.bannerUrl} onChange={set('bannerUrl')} placeholder="https://…" />
+        </div>
+      </div>
 
-      <FieldRow>
-        <Field>
-          <FieldLabel>External link</FieldLabel>
-          <TextInput value={form.linkUrl} onChange={set('linkUrl')} placeholder="https://…" />
-        </Field>
-        <Field>
-          <FieldLabel>Link label</FieldLabel>
-          <TextInput value={form.linkLabel} onChange={set('linkLabel')} placeholder="My blog" maxLength={40} />
-        </Field>
-      </FieldRow>
+      <div className="profile-field-row">
+        <div className="profile-field">
+          <label className="profile-field-label">External link</label>
+          <input className="profile-text-input" value={form.linkUrl} onChange={set('linkUrl')} placeholder="https://…" />
+        </div>
+        <div className="profile-field">
+          <label className="profile-field-label">Link label</label>
+          <input
+            className="profile-text-input"
+            value={form.linkLabel}
+            onChange={set('linkLabel')}
+            placeholder="My blog"
+            maxLength={40}
+          />
+        </div>
+      </div>
 
-      {error && <ErrorText>{error}</ErrorText>}
+      {error && <div className="profile-error-text">{error}</div>}
 
-      <EditActions>
+      <div className="profile-edit-actions">
         <Button type="submit" disabled={saving}>
           Save
         </Button>
         <Button type="button" $variant="outline" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
-      </EditActions>
-    </EditCard>
+      </div>
+    </form>
   );
 }
 
@@ -394,7 +187,7 @@ export function ProfileContainer() {
   if (profileLoading || catalogLoading) {
     return (
       <PageWrap $maxWidth="640px" $padding="44px 32px">
-        <StatusText>Loading profile…</StatusText>
+        <div className="profile-status-text">Loading profile…</div>
       </PageWrap>
     );
   }
@@ -402,7 +195,7 @@ export function ProfileContainer() {
   if (!profile && !isOwnProfile) {
     return (
       <PageWrap $maxWidth="640px" $padding="44px 32px">
-        <StatusText>That player couldn't be found.</StatusText>
+        <div className="profile-status-text">That player couldn't be found.</div>
       </PageWrap>
     );
   }
@@ -414,7 +207,7 @@ export function ProfileContainer() {
   if (editing) {
     return (
       <PageWrap $maxWidth="640px" $padding="44px 32px">
-        <StatsTitle>Edit profile</StatsTitle>
+        <div className="profile-stats-title">Edit profile</div>
         <EditProfileForm profile={profile} onCancel={() => setEditing(false)} onSaved={() => setEditing(false)} />
       </PageWrap>
     );
@@ -422,7 +215,7 @@ export function ProfileContainer() {
 
   return (
     <PageWrap $maxWidth="640px" $padding="44px 32px">
-      <TopRow>
+      <div className="profile-top-row">
         {isOwnProfile ? (
           <Button $variant="outline" onClick={() => setEditing(true)}>
             Edit Profile
@@ -430,22 +223,23 @@ export function ProfileContainer() {
         ) : (
           <FollowBackButton targetUid={targetUid} />
         )}
-      </TopRow>
+      </div>
 
-      <Hero $bannerUrl={profile?.bannerUrl}>
-        <Avatar
-          size={88}
-          color={avatarColor}
-          imageUrl={profile?.avatarUrl}
-          borderWidth={2}
-          borderColor="rgba(46,32,19,.22)"
-        />
+      <div
+        className={`profile-hero${profile?.bannerUrl ? ' profile-hero--banner' : ''}`}
+        style={
+          profile?.bannerUrl
+            ? { backgroundImage: `linear-gradient(rgba(46,32,19,.15), rgba(46,32,19,.15)), url(${profile.bannerUrl})` }
+            : undefined
+        }
+      >
+        <Avatar size={88} color={avatarColor} imageUrl={profile?.avatarUrl} borderWidth={2} borderColor="rgba(46,32,19,.22)" />
         <div>
-          <NameRow>
-            <Name>{displayName}</Name>
-            {profile?.pronouns && <Pronouns>({profile.pronouns})</Pronouns>}
-          </NameRow>
-          <Meta>
+          <div className="profile-name-row">
+            <div className="profile-name">{displayName}</div>
+            {profile?.pronouns && <div className="profile-pronouns">({profile.pronouns})</div>}
+          </div>
+          <div className="profile-meta">
             Joined {formatJoinDate(profile?.createdAt)}
             {isOwnProfile && (
               <>
@@ -454,30 +248,32 @@ export function ProfileContainer() {
                 {friends.length === 1 ? '' : 's'}
               </>
             )}
-          </Meta>
-          {profile?.location && <Location>📍 {profile.location}</Location>}
+          </div>
+          {profile?.location && <div className="profile-location">📍 {profile.location}</div>}
         </div>
-      </Hero>
+      </div>
 
-      {profile?.bio && <Bio>{profile.bio}</Bio>}
+      {profile?.bio && <div className="profile-bio">{profile.bio}</div>}
       {profile?.externalLink?.url && (
         <div>
-          <ExternalLink href={profile.externalLink.url} target="_blank" rel="noopener noreferrer">
+          <a className="profile-external-link" href={profile.externalLink.url} target="_blank" rel="noopener noreferrer">
             🔗 {profile.externalLink.label || profile.externalLink.url}
-          </ExternalLink>
+          </a>
         </div>
       )}
 
       {isOwnProfile && (
-        <IdRow>
+        <div className="profile-id-row">
           Your user ID (share this so friends can follow you):
-          <IdValue>{user?.uid}</IdValue>
-          <CopyButton onClick={() => navigator.clipboard?.writeText(user?.uid || '')}>Copy</CopyButton>
-        </IdRow>
+          <span className="profile-id-value">{user?.uid}</span>
+          <button className="profile-copy-button" onClick={() => navigator.clipboard?.writeText(user?.uid || '')}>
+            Copy
+          </button>
+        </div>
       )}
 
-      <StatsTitle>Stats by game</StatsTitle>
-      <StatsList>
+      <div className="profile-stats-title">Stats by game</div>
+      <div className="profile-stats-list">
         {games.map((game) => {
           const stat = profile?.stats?.[game.id];
           const wins = stat?.wins || 0;
@@ -486,22 +282,22 @@ export function ProfileContainer() {
           const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
 
           return (
-            <StatRow key={game.id} $live={game.active}>
-              <StatThumb $stripe={game.active ? '#C8592F' : '#8a8272'} />
+            <div className={`profile-stat-row${game.active ? ' profile-stat-row--live' : ''}`} key={game.id}>
+              <div className={`profile-stat-thumb${game.active ? ' profile-stat-thumb--live' : ''}`} />
               <div>
-                <StatName>{game.displayName || game.id}</StatName>
+                <div className="profile-stat-name">{game.displayName || game.id}</div>
                 {game.active ? (
-                  <StatDetail $live>
+                  <div className="profile-stat-detail profile-stat-detail--live">
                     {wins}W – {losses}L · {winRate}% win rate
-                  </StatDetail>
+                  </div>
                 ) : (
-                  <StatDetail>Coming soon</StatDetail>
+                  <div className="profile-stat-detail">Coming soon</div>
                 )}
               </div>
-            </StatRow>
+            </div>
           );
         })}
-      </StatsList>
+      </div>
     </PageWrap>
   );
 }

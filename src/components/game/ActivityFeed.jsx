@@ -1,82 +1,9 @@
-import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar.jsx';
 import { Button } from '../ui/Button.jsx';
 import { colorForId } from '../../utils/colors.js';
 import { formatAbsoluteTime } from '../../utils/time.js';
-
-const Panel = styled.div`
-  margin-top: 30px;
-`;
-
-const Title = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 24px;
-  letter-spacing: -0.5px;
-  margin-bottom: 14px;
-`;
-
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const Row = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.cardSm};
-  padding: 12px 16px;
-  flex-wrap: wrap;
-`;
-
-const Icon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  background: ${({ theme }) => theme.colors.pageBg};
-`;
-
-const Info = styled.div`
-  flex: 1;
-  min-width: 160px;
-  font-size: 14px;
-  color: #2e2013;
-`;
-
-const InlineLink = styled(Link)`
-  font-weight: 700;
-  color: #2e2013;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const TimeText = styled.div`
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-  margin-top: 2px;
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
-const EmptyText = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
+import './ActivityFeed.css';
 
 function describeGameResult(entry, gameNames) {
   const gameName = gameNames[entry.gameType] || 'a game';
@@ -95,27 +22,31 @@ export function ActivityFeed({
   respondBusyId,
   onJoinInvite,
   onDeclineInvite,
+  joinedRoomIds,
 }) {
   return (
-    <Panel>
-      <Title>Activity</Title>
+    <div className="activity-feed">
+      <div className="activity-feed__title">Activity</div>
 
-      {loading && <EmptyText>Loading activity…</EmptyText>}
+      {loading && <div className="activity-feed__empty">Loading activity…</div>}
       {!loading && entries.length === 0 && (
-        <EmptyText>Nothing yet — invites, new followers, and game updates will show up here.</EmptyText>
+        <div className="activity-feed__empty">Nothing yet — invites, new followers, and game updates will show up here.</div>
       )}
 
-      <List>
+      <div className="activity-feed__list">
         {entries.map((entry) => {
           if (entry.type === 'follow') {
             const alreadyFollowing = followingUids.has(entry.actorUid);
             return (
-              <Row key={entry.id}>
+              <div className="activity-feed__row" key={entry.id}>
                 <Avatar size={40} color={colorForId(entry.actorUid)} />
-                <Info>
-                  <InlineLink to={`/profile/${entry.actorUid}`}>{entry.actorName}</InlineLink> followed you.
-                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
-                </Info>
+                <div className="activity-feed__info">
+                  <Link className="activity-feed__link" to={`/profile/${entry.actorUid}`}>
+                    {entry.actorName}
+                  </Link>{' '}
+                  followed you.
+                  <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
+                </div>
                 <Button
                   $variant="outline"
                   disabled={alreadyFollowing || followBackBusyUid === entry.actorUid}
@@ -123,71 +54,90 @@ export function ActivityFeed({
                 >
                   {alreadyFollowing ? 'Following' : 'Follow Back'}
                 </Button>
-              </Row>
+              </div>
             );
           }
 
           if (entry.type === 'invite') {
             const gameName = gameNames[entry.gameType] || 'a game';
             const busy = respondBusyId === entry.id;
+            const alreadyJoined = joinedRoomIds?.has(entry.roomId);
             return (
-              <Row key={entry.id}>
+              <div className="activity-feed__row" key={entry.id}>
                 <Avatar size={40} color={colorForId(entry.inviterUid)} />
-                <Info>
-                  <InlineLink to={`/profile/${entry.inviterUid}`}>{entry.inviterName}</InlineLink> invited you to{' '}
-                  {gameName} — Room {entry.roomCode}.
-                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
-                </Info>
-                <ButtonGroup>
-                  <Button disabled={busy} onClick={() => onJoinInvite(entry)}>
-                    Join
+                <div className="activity-feed__info">
+                  <Link className="activity-feed__link" to={`/profile/${entry.inviterUid}`}>
+                    {entry.inviterName}
+                  </Link>{' '}
+                  invited you to {gameName} — Room {entry.roomCode}.
+                  <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
+                </div>
+                {alreadyJoined ? (
+                  <Button $variant="outline" disabled>
+                    Joined Game
                   </Button>
-                  <Button $variant="outline" disabled={busy} onClick={() => onDeclineInvite(entry)}>
-                    Decline
-                  </Button>
-                </ButtonGroup>
-              </Row>
+                ) : (
+                  <div className="activity-feed__button-group">
+                    <Button disabled={busy} onClick={() => onJoinInvite(entry)}>
+                      Join
+                    </Button>
+                    <Button $variant="outline" disabled={busy} onClick={() => onDeclineInvite(entry)}>
+                      Decline
+                    </Button>
+                  </div>
+                )}
+              </div>
             );
           }
 
           if (entry.type === 'player_joined') {
             const gameName = gameNames[entry.gameType] || 'a game';
             return (
-              <Row key={entry.id}>
+              <div className="activity-feed__row" key={entry.id}>
                 <Avatar size={40} color={colorForId(entry.playerUid)} />
-                <Info>
-                  <InlineLink to={`/profile/${entry.playerUid}`}>{entry.playerName}</InlineLink> joined your {gameName}{' '}
-                  room — <InlineLink to={`/rooms/${entry.roomId}`}>Room {entry.roomCode}</InlineLink>.
-                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
-                </Info>
-              </Row>
+                <div className="activity-feed__info">
+                  <Link className="activity-feed__link" to={`/profile/${entry.playerUid}`}>
+                    {entry.playerName}
+                  </Link>{' '}
+                  joined your {gameName} room —{' '}
+                  <Link className="activity-feed__link" to={`/rooms/${entry.roomId}`}>
+                    Room {entry.roomCode}
+                  </Link>
+                  .
+                  <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
+                </div>
+              </div>
             );
           }
 
           if (entry.type === 'game_started') {
             const gameName = gameNames[entry.gameType] || 'a game';
             return (
-              <Row key={entry.id}>
-                <Icon>🚀</Icon>
-                <Info>
-                  {gameName} is starting — <InlineLink to={`/rooms/${entry.roomId}`}>Room {entry.roomCode}</InlineLink>.
-                  <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
-                </Info>
-              </Row>
+              <div className="activity-feed__row" key={entry.id}>
+                <div className="activity-feed__icon">🚀</div>
+                <div className="activity-feed__info">
+                  {gameName} is starting —{' '}
+                  <Link className="activity-feed__link" to={`/rooms/${entry.roomId}`}>
+                    Room {entry.roomCode}
+                  </Link>
+                  .
+                  <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
+                </div>
+              </div>
             );
           }
 
           return (
-            <Row key={entry.id}>
-              <Icon>{entry.type === 'game_won' ? '🏆' : '🎲'}</Icon>
-              <Info>
+            <div className="activity-feed__row" key={entry.id}>
+              <div className="activity-feed__icon">{entry.type === 'game_won' ? '🏆' : '🎲'}</div>
+              <div className="activity-feed__info">
                 {describeGameResult(entry, gameNames)}
-                <TimeText>{formatAbsoluteTime(entry.createdAt)}</TimeText>
-              </Info>
-            </Row>
+                <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
+              </div>
+            </div>
           );
         })}
-      </List>
-    </Panel>
+      </div>
+    </div>
   );
 }

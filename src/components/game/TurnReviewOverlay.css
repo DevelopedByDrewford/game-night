@@ -1,0 +1,81 @@
+@keyframes turn-review-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Sits over just the opponents/turn area on desktop (its positioned parent
+   is TableTop in ActiveTableContainer), but goes full-page on mobile — same
+   breakpoint as the rest of the table layout. */
+.turn-review-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  background: rgba(20, 14, 8, 0.55);
+  border-radius: var(--radius-card-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+@media (max-width: 640px) {
+  .turn-review-backdrop {
+    position: fixed;
+    border-radius: 0;
+    z-index: 30;
+  }
+}
+
+.turn-review-panel {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 28px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  animation: turn-review-fade-in-up 0.28s ease-out;
+}
+
+.turn-review-progress {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(46, 32, 19, 0.45);
+  margin-bottom: 14px;
+}
+
+.turn-review-card-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.turn-review-announcement {
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: #2e2013;
+  line-height: 1.4;
+  margin: 20px 0 24px;
+}
+
+.turn-review-sentence {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #2e2013;
+  margin-bottom: 22px;
+}
+
+.turn-review-nav-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}

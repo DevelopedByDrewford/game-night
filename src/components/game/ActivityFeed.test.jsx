@@ -20,6 +20,7 @@ function renderFeed(props) {
           respondBusyId={null}
           onJoinInvite={vi.fn()}
           onDeclineInvite={vi.fn()}
+          joinedRoomIds={new Set()}
           {...props}
         />
       </ThemeProvider>
@@ -111,6 +112,19 @@ describe('ActivityFeed', () => {
 
     expect(screen.getByRole('button', { name: 'Join' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Decline' })).toBeDisabled();
+  });
+
+  it('shows a disabled "Joined Game" button instead of Join/Decline once the invitee is already in that room', () => {
+    renderFeed({
+      entries: [
+        { id: '1', type: 'invite', roomId: 'room1', roomCode: 'AAAA', gameType: 'love-letter', inviterUid: 'alice', inviterName: 'Alice', createdAt: null },
+      ],
+      joinedRoomIds: new Set(['room1']),
+    });
+
+    expect(screen.getByRole('button', { name: 'Joined Game' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Join' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
   });
 
   it('renders a player_joined entry with links to the player and the room', () => {

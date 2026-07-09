@@ -1,7 +1,5 @@
-import { ThemeProvider } from 'styled-components';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { lightTheme, darkTheme } from './styles/theme.js';
-import { GlobalStyle } from './styles/GlobalStyle.js';
 import { Background } from './components/layout/Background.jsx';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import { usePresence } from './hooks/usePresence.js';
@@ -49,14 +47,15 @@ function AppShell() {
 
 function ThemedApp() {
   const { profile } = useProfile();
-  const selectedTheme = profile?.themeMode === 'light' ? lightTheme : darkTheme;
+  const themeMode = profile?.themeMode === 'light' ? 'light' : 'dark';
 
-  return (
-    <ThemeProvider theme={selectedTheme}>
-      <GlobalStyle />
-      <AppShell />
-    </ThemeProvider>
-  );
+  // Drives styles/variables.css's [data-theme] selectors — the whole app
+  // is plain CSS now, no styled-components ThemeProvider needed.
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeMode;
+  }, [themeMode]);
+
+  return <AppShell />;
 }
 
 function App() {

@@ -1,0 +1,28 @@
+.avatar {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+}
+
+.avatar--clickable {
+  cursor: pointer;
+}
+
+.avatar__circle {
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar__status {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+}

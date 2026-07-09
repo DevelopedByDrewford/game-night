@@ -1,145 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase.js';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { createRoom } from '../utils/rooms.js';
+import { useFollowing } from '../hooks/useFollowing.js';
+import { usePresenceMap } from '../hooks/usePresenceMap.js';
+import { createRoom, inviteToRoom } from '../utils/rooms.js';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { SegmentedControl } from '../components/ui/SegmentedControl.jsx';
 import { Toggle } from '../components/ui/Toggle.jsx';
-
-const Title = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 36px;
-  letter-spacing: -1px;
-  margin-bottom: 4px;
-  text-shadow: 0 2px 14px rgba(200, 89, 47, 0.18);
-`;
-
-const Subtitle = styled.div`
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.inkFaint};
-  margin-bottom: 30px;
-`;
-
-const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.card};
-  padding: 26px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  display: flex;
-  flex-direction: column;
-  gap: 26px;
-`;
-
-const SectionLabel = styled.div`
-  font-weight: 700;
-  font-size: 15px;
-  margin-bottom: 12px;
-  color: #2e2013;
-`;
-
-const StepperRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 18px;
-`;
-
-const StepperButton = styled.button`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  background: #fff;
-  color: #2e2013;
-`;
-
-const StepperValue = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 32px;
-  width: 40px;
-  text-align: center;
-  color: #2e2013;
-`;
-
-const StepperHint = styled.div`
-  font-size: 13px;
-  color: rgba(46, 32, 19, 0.55);
-`;
-
-const ToggleRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const ToggleTitle = styled.div`
-  font-weight: 700;
-  font-size: 15px;
-  color: #2e2013;
-`;
-
-const ToggleDesc = styled.div`
-  font-size: 12px;
-  color: rgba(46, 32, 19, 0.55);
-  margin-top: 2px;
-`;
-
-const InviteSection = styled.div`
-  border-top: 2px dashed rgba(46, 32, 19, 0.3);
-  padding-top: 22px;
-`;
-
-const InviteRow = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: center;
-`;
-
-const Code = styled.div`
-  flex: 1;
-  font-family: ${({ theme }) => theme.fonts.mono};
-  font-size: 22px;
-  letter-spacing: 6px;
-  text-align: center;
-  padding: 12px;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.pageBg};
-  font-weight: 700;
-`;
-
-const SmallButton = styled.button`
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 14px;
-  padding: 12px 18px;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $color }) => $color || 'inherit'};
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const ErrorText = styled.div`
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.terracotta};
-`;
+import { InviteFriendsModal } from '../components/game/InviteFriendsModal.jsx';
+import './CreateRoomContainer.css';
 
 const RULESET_OPTIONS = [
   { value: 'classic', label: 'Classic' },
@@ -156,6 +29,12 @@ export function CreateRoomContainer() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const createStarted = useRef(false);
+
+  const { friends } = useFollowing();
+  const friendPresence = usePresenceMap(friends.map((f) => f.uid));
+  const [invitedUids, setInvitedUids] = useState(new Set());
+  const [inviteBusyUid, setInviteBusyUid] = useState(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // Classic's 16-card deck can't seat more than 4 — force-switch to Extended
   // once the host goes above that, but never force back to Classic when
@@ -190,6 +69,21 @@ export function CreateRoomContainer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  async function handleInvite(targetUid) {
+    if (!room) return;
+    setInviteBusyUid(targetUid);
+    setError(null);
+    try {
+      await inviteToRoom({ roomId: room.roomId, targetUid });
+      setInvitedUids((prev) => new Set(prev).add(targetUid));
+    } catch (err) {
+      console.error('[CreateRoomContainer] failed to invite', err);
+      setError("Couldn't send that invite — try again.");
+    } finally {
+      setInviteBusyUid(null);
+    }
+  }
+
   async function handleCreate() {
     if (!room) return;
     setSubmitting(true);
@@ -211,63 +105,85 @@ export function CreateRoomContainer() {
     <>
       <RoomChromeHeader title="Set Up Your Table" />
       <PageWrap $maxWidth="640px" $padding="44px 32px">
-        <Title>Set Up Your Table</Title>
-        <Subtitle>Love Letter · configure before you invite friends.</Subtitle>
+        <div className="create-room-title">Set Up Your Table</div>
+        <div className="create-room-subtitle">Love Letter · configure before you invite friends.</div>
 
-        <Card>
+        <div className="create-room-card">
           <div>
-            <SectionLabel>Player count</SectionLabel>
-            <StepperRow>
-              <StepperButton onClick={() => setPlayerCount((c) => Math.max(2, c - 1))}>–</StepperButton>
-              <StepperValue>{playerCount}</StepperValue>
-              <StepperButton onClick={() => setPlayerCount((c) => Math.min(6, c + 1))}>+</StepperButton>
-              <StepperHint>players (2–6)</StepperHint>
-            </StepperRow>
+            <div className="create-room-section-label">Player count</div>
+            <div className="create-room-stepper-row">
+              <button className="create-room-stepper-button" onClick={() => setPlayerCount((c) => Math.max(2, c - 1))}>
+                –
+              </button>
+              <div className="create-room-stepper-value">{playerCount}</div>
+              <button className="create-room-stepper-button" onClick={() => setPlayerCount((c) => Math.min(6, c + 1))}>
+                +
+              </button>
+              <div className="create-room-stepper-hint">players (2–6)</div>
+            </div>
           </div>
 
           <div>
-            <SectionLabel>Ruleset</SectionLabel>
+            <div className="create-room-section-label">Ruleset</div>
             <SegmentedControl options={rulesetOptions} value={ruleset} onChange={setRuleset} />
             {playerCount > 4 && (
-              <StepperHint style={{ marginTop: 8 }}>
+              <div className="create-room-stepper-hint" style={{ marginTop: 8 }}>
                 5-6 player games always use the Extended deck (adds Spy &amp; Chancellor).
-              </StepperHint>
+              </div>
             )}
           </div>
 
-          <ToggleRow>
+          <div className="create-room-toggle-row">
             <div>
-              <ToggleTitle>Auto-skip inactive players</ToggleTitle>
-              <ToggleDesc>Skip a turn if a player doesn't act in time</ToggleDesc>
+              <div className="create-room-toggle-title">Auto-skip inactive players</div>
+              <div className="create-room-toggle-desc">Skip a turn if a player doesn't act in time</div>
             </div>
             <Toggle checked={autoSkip} onChange={setAutoSkip} />
-          </ToggleRow>
+          </div>
 
-          <InviteSection>
-            <SectionLabel>Invite code</SectionLabel>
-            <InviteRow>
-              <Code>{room?.code || '····'}</Code>
-              <SmallButton
-                $bg="#E3A73E"
-                $color="#2E2013"
+          <div className="create-room-invite-section">
+            <div className="create-room-section-label">Invite code</div>
+            <div className="create-room-invite-row">
+              <div className="create-room-code">{room?.code || '····'}</div>
+              <button
+                className="create-room-small-button create-room-small-button--mustard"
                 disabled={!room}
                 onClick={() => navigator.clipboard?.writeText(room.code)}
               >
                 Copy
-              </SmallButton>
-              <SmallButton $bg="#7C8C4A" $color="#F5ECD8" disabled={!room}>
+              </button>
+              <button className="create-room-small-button create-room-small-button--avocado" disabled={!room}>
                 Share
-              </SmallButton>
-            </InviteRow>
-          </InviteSection>
+              </button>
+            </div>
+            <button
+              className="create-room-small-button"
+              style={{ marginTop: 10, width: '100%' }}
+              disabled={!room}
+              onClick={() => setInviteModalOpen(true)}
+            >
+              Invite Friends
+            </button>
+          </div>
 
-          {error && <ErrorText>{error}</ErrorText>}
+          {error && <div className="create-room-error-text">{error}</div>}
 
           <Button $fullWidth disabled={!room || submitting} onClick={handleCreate}>
             Create Room →
           </Button>
-        </Card>
+        </div>
       </PageWrap>
+
+      {inviteModalOpen && room && (
+        <InviteFriendsModal
+          friends={friends}
+          presence={friendPresence}
+          invitedUids={invitedUids}
+          busyUid={inviteBusyUid}
+          onInvite={handleInvite}
+          onClose={() => setInviteModalOpen(false)}
+        />
+      )}
     </>
   );
 }

@@ -1,0 +1,49 @@
+/* Reproduces the design's "groovy swoosh" motif: a diagonal 3-color pipe, a
+   concentric rounded arch (elbow), and a horizontal pipe continuing from the
+   arch's right leg. Pure divs, no SVG/images, fixed behind all content. */
+
+.background-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.32;
+}
+
+.background-pipe {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.background-pipe div {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.background-pipe--diagonal {
+  position: absolute;
+  top: -70px;
+  left: 12%;
+  width: 1500px;
+  height: 44px;
+  transform: rotate(20deg);
+  transform-origin: top left;
+}
+
+.background-pipe--horizontal {
+  position: absolute;
+  left: calc(4% + 98px);
+  bottom: 48%;
+  right: -10%;
+}
+
+.background-arch {
+  position: absolute;
+  bottom: 48%;
+  border-style: solid;
+  border-width: 12px;
+  border-bottom: none;
+  box-sizing: border-box;
+}

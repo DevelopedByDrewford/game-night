@@ -1,61 +1,25 @@
-import styled from 'styled-components';
 import { formatRelativeTime } from '../../utils/time.js';
-
-const Panel = styled.div`
-  flex: 1;
-  min-width: 220px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.cardSm};
-  padding: 16px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  height: fit-content;
-`;
-
-const Title = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 18px;
-  margin-bottom: 10px;
-  color: #2e2013;
-`;
-
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 340px;
-  overflow-y: auto;
-`;
-
-const Entry = styled.div`
-  font-size: 13px;
-  color: rgba(46, 32, 19, 0.75);
-  border-bottom: 1px dashed rgba(46, 32, 19, 0.2);
-  padding-bottom: 6px;
-`;
-
-const EntryTime = styled.div`
-  font-size: 11px;
-  color: rgba(46, 32, 19, 0.45);
-  margin-top: 2px;
-`;
+import './ActionLogPanel.css';
 
 // `entries` is the raw gameRooms/{roomId}/log docs ({id, message,
-// createdAt, ...}) — relative timestamps here (vs. the Dashboard activity
-// feed's absolute ones) since this is a live, in-the-moment view of a
-// single game session.
+// createdAt, ...}), oldest-first (that order matters upstream — e.g.
+// ActiveTableContainer's TurnReviewOverlay steps through it sequentially)
+// — reversed only here for display, so the most recent turn reads at the
+// top. Relative timestamps here (vs. the Dashboard activity feed's
+// absolute ones) since this is a live, in-the-moment view of a single game
+// session.
 export function ActionLogPanel({ entries }) {
   return (
-    <Panel>
-      <Title>Action Log</Title>
-      <List>
-        {entries.map((entry) => (
-          <Entry key={entry.id}>
+    <div className="action-log-panel">
+      <div className="action-log-panel__title">Action Log</div>
+      <div className="action-log-panel__list">
+        {[...entries].reverse().map((entry) => (
+          <div className="action-log-panel__entry" key={entry.id}>
             {entry.message}
-            <EntryTime>{formatRelativeTime(entry.createdAt)}</EntryTime>
-          </Entry>
+            <div className="action-log-panel__time">{formatRelativeTime(entry.createdAt)}</div>
+          </div>
         ))}
-      </List>
-    </Panel>
+      </div>
+    </div>
   );
 }

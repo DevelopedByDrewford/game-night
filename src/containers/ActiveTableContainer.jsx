@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { OpponentSeat } from '../components/game/OpponentSeat.jsx';
@@ -21,164 +20,7 @@ import { playCard, resolveChancellor } from '../utils/gameplay.js';
 import { colorForId } from '../utils/colors.js';
 import { CARD_DEFS, TARGETED_CARDS, cardName, cardDescription } from '../utils/cards.js';
 import { frontImageFor, backImageFor } from '../utils/cardArt.js';
-
-const Layout = styled.div`
-  max-width: ${({ theme }) => theme.maxWidth.grid};
-  margin: 0 auto;
-  padding: 28px 32px;
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  position: relative;
-  z-index: 1;
-
-  @media (max-width: 640px) {
-    padding-bottom: 90px;
-    /* TableColumn's 420px min-width otherwise still competes for space on
-       the same flex line as the Action Log/Rules panels (removing just the
-       min-width isn't enough — flex-basis from the flex:2 shorthand wins
-       over width), squeezing the hand panel down to a sliver. Stack
-       everything full-width instead. */
-    flex-direction: column;
-  }
-`;
-
-const TableColumn = styled.div`
-  flex: 2;
-  min-width: 420px;
-
-  @media (max-width: 640px) {
-    min-width: 0;
-    width: 100%;
-  }
-`;
-
-// Positioned ancestor for TurnReviewOverlay — on desktop the overlay covers
-// exactly this area (opponents + turn indicator/deck), leaving the hand,
-// action log, and rules panel visible; on mobile the overlay goes full-page
-// instead (see its own breakpoint), so this relative positioning is inert
-// there.
-const TableTop = styled.div`
-  position: relative;
-`;
-
-const Opponents = styled.div`
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 22px;
-  flex-wrap: wrap;
-  gap: 14px;
-`;
-
-const TurnArea = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin: 22px 0;
-`;
-
-const TurnIndicator = styled.div`
-  border: 1.5px dashed ${({ theme }) => theme.colors.terracotta};
-  border-radius: 20px;
-  padding: 8px 20px;
-  font-weight: 700;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.terracotta};
-`;
-
-const DeckRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
-
-const DeckCount = styled.div`
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.inkFaint};
-`;
-
-const TokenCount = styled.div`
-  font-size: 13px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.ink};
-`;
-
-const HandPanel = styled.div`
-  border: 3px solid ${({ theme }) => theme.colors.terracotta};
-  background: #fdf0e5;
-  border-radius: 18px;
-  padding: 16px;
-  margin-top: 16px;
-`;
-
-const HandLabel = styled.div`
-  font-size: 12px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.terracotta};
-  letter-spacing: 1px;
-  margin-bottom: 10px;
-`;
-
-const HandCards = styled.div`
-  display: flex;
-  gap: 12px;
-`;
-
-const MyDiscardWrap = styled.div`
-  margin-top: 14px;
-`;
-
-const PickerTitle = styled.div`
-  font-weight: 700;
-  font-size: 14px;
-  margin-bottom: 10px;
-  color: #2e2013;
-`;
-
-const PickerRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-`;
-
-const ModalCardPreview = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-bottom: 18px;
-`;
-
-const ModalCardName = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 24px;
-  color: #2e2013;
-  margin-bottom: 8px;
-`;
-
-const ModalCardDescription = styled.div`
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(46, 32, 19, 0.75);
-  margin-bottom: 22px;
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-`;
-
-const MessageText = styled.div`
-  font-size: 13px;
-  margin-top: 10px;
-  color: ${({ theme, $error }) => ($error ? theme.colors.terracotta : theme.colors.avocado)};
-`;
-
-const StatusText = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
+import './ActiveTableContainer.css';
 
 export function ActiveTableContainer({ room }) {
   const navigate = useNavigate();
@@ -224,7 +66,7 @@ export function ActiveTableContainer({ room }) {
     return (
       <>
         <RoomChromeHeader title={`Room ${room.code}`} />
-        <StatusText>Loading table…</StatusText>
+        <div className="table-status-text">Loading table…</div>
       </>
     );
   }
@@ -393,31 +235,31 @@ export function ActiveTableContainer({ room }) {
         showEndGameEarly={isHost}
         onEndGameEarly={handleEndGameEarly}
       />
-      <Layout>
-        <TableColumn>
-          <TableTop>
-            <Opponents>
+      <div className="table-layout">
+        <div className="table-column">
+          <div className="table-top">
+            <div className="table-opponents">
               {opponents.map((op) => (
                 <OpponentSeat key={op.name} {...op} />
               ))}
-            </Opponents>
+            </div>
 
-            <TurnArea>
-              <TurnIndicator>
+            <div className="table-turn-area">
+              <div className="table-turn-indicator">
                 {myChancellorPending
                   ? '▶ Choose a card to keep…'
                   : myTurn
                   ? '▶ Your turn'
                   : `▶ ${nameForUid(state.turnUid)}'s turn`}
-              </TurnIndicator>
-              <DeckRow>
+              </div>
+              <div className="table-deck-row">
                 <PlayingCard width={44} height={60} radius={8} stripe="#7C8C4A" stripeSize={6} backImageUrl={backImageFor()} />
-                <DeckCount>Deck: {state.deckCount} left</DeckCount>
-              </DeckRow>
-              <TokenCount>
+                <div className="table-deck-count">Deck: {state.deckCount} left</div>
+              </div>
+              <div className="table-token-count">
                 Round {state.roundNumber} · You: {myTokens}/{state.tokensToWin} tokens
-              </TokenCount>
-            </TurnArea>
+              </div>
+            </div>
 
             {pendingEntries.length > 0 && (
               <TurnReviewOverlay
@@ -430,15 +272,17 @@ export function ActiveTableContainer({ room }) {
                 onSkip={closeReview}
               />
             )}
-          </TableTop>
+          </div>
 
-          <HandPanel>
-            <HandLabel>YOUR HAND — PRIVATE</HandLabel>
+          <div className="table-hand-panel">
+            <div className="table-hand-label">YOUR HAND — PRIVATE</div>
 
             {myChancellorPending && (
-              <PickerTitle>Chancellor — choose 1 card to keep, the rest go to the bottom of the deck</PickerTitle>
+              <div className="table-picker-title">
+                Chancellor — choose 1 card to keep, the rest go to the bottom of the deck
+              </div>
             )}
-            <HandCards>
+            <div className="table-hand-cards">
               {hand.map((cardId, i) => (
                 <PlayingCard
                   key={`${cardId}-${i}`}
@@ -454,23 +298,27 @@ export function ActiveTableContainer({ room }) {
                   }}
                 />
               ))}
-            </HandCards>
+            </div>
 
-            {message && <MessageText $error={message.error}>{message.text}</MessageText>}
-          </HandPanel>
+            {message && (
+              <div className={`table-message-text${message.error ? ' table-message-text--error' : ''}`}>
+                {message.text}
+              </div>
+            )}
+          </div>
 
-          <MyDiscardWrap>
+          <div className="table-my-discard">
             <DiscardPileRow discards={myDiscards} label="Your discard" onClick={() => setDiscardsModalOpen(true)} />
-          </MyDiscardWrap>
-        </TableColumn>
+          </div>
+        </div>
 
         <ActionLogPanel entries={entries} />
         <RulesReferencePanel ruleset={state.ruleset} />
-      </Layout>
+      </div>
 
       {selectedCard && !pending && (
         <Modal onClose={handleCancelSelection}>
-          <ModalCardPreview>
+          <div className="table-modal-card-preview">
             <PlayingCard
               width={170}
               height={238}
@@ -480,30 +328,30 @@ export function ActiveTableContainer({ room }) {
               label={cardName(selectedCard)}
               frontImageUrl={frontImageFor(selectedCard)}
             />
-          </ModalCardPreview>
-          <ModalCardName>{cardName(selectedCard)}</ModalCardName>
-          <ModalCardDescription>{cardDescription(selectedCard)}</ModalCardDescription>
-          <ModalActions>
+          </div>
+          <div className="table-modal-card-name">{cardName(selectedCard)}</div>
+          <div className="table-modal-card-description">{cardDescription(selectedCard)}</div>
+          <div className="table-modal-actions">
             <Button onClick={handlePlaySelected} disabled={submitting}>
               Play
             </Button>
             <Button $variant="outline" onClick={handleCancelSelection} disabled={submitting}>
               Cancel
             </Button>
-          </ModalActions>
+          </div>
         </Modal>
       )}
 
       {pending && !pending.targetUid && (
         <Modal onClose={handleCancelSelection}>
-          <PickerTitle>Choose a target for {cardName(pending.cardId)}</PickerTitle>
-          <PickerRow>
+          <div className="table-picker-title">Choose a target for {cardName(pending.cardId)}</div>
+          <div className="table-picker-row">
             {legalTargetsFor(pending.cardId).map((uid) => (
               <Button key={uid} $variant="outline" onClick={() => handleTargetPick(uid)}>
                 {uid === user.uid ? 'Yourself' : nameForUid(uid)}
               </Button>
             ))}
-          </PickerRow>
+          </div>
           <Button $variant="outline" onClick={handleCancelSelection}>
             Cancel
           </Button>
@@ -516,8 +364,8 @@ export function ActiveTableContainer({ room }) {
 
       {pending?.cardId === 'guard' && pending.targetUid && (
         <Modal onClose={handleCancelSelection}>
-          <PickerTitle>Guess {nameForUid(pending.targetUid)}'s card</PickerTitle>
-          <PickerRow>
+          <div className="table-picker-title">Guess {nameForUid(pending.targetUid)}'s card</div>
+          <div className="table-picker-row">
             {Object.keys(CARD_DEFS)
               .filter((id) => id !== 'guard')
               .map((id) => (
@@ -525,7 +373,7 @@ export function ActiveTableContainer({ room }) {
                   {cardName(id)}
                 </Button>
               ))}
-          </PickerRow>
+          </div>
           <Button $variant="outline" onClick={handleCancelSelection}>
             Cancel
           </Button>

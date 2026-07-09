@@ -1,4 +1,3 @@
-import styled from 'styled-components';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { SegmentedControl } from '../components/ui/SegmentedControl.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -6,39 +5,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useProfile } from '../hooks/useProfile.js';
 import { usePushNotifications } from '../hooks/usePushNotifications.js';
 import { updateProfile } from '../utils/profile.js';
-
-const Title = styled.h1`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 32px;
-  margin: 0 0 24px;
-`;
-
-const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.card};
-  padding: 24px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-`;
-
-const Label = styled.div`
-  font-weight: 700;
-  font-size: 15px;
-  margin-bottom: 4px;
-  color: #2e2013;
-`;
-
-const Description = styled.div`
-  font-size: 13px;
-  color: rgba(46, 32, 19, 0.6);
-  margin-bottom: 16px;
-`;
-
-const CardStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
+import './SettingsContainer.css';
 
 const THEME_OPTIONS = [
   { value: 'dark', label: 'Dark' },
@@ -78,17 +45,17 @@ export function SettingsContainer() {
 
   return (
     <PageWrap $maxWidth="640px" $padding="44px 32px">
-      <Title>Settings</Title>
-      <CardStack>
-        <Card>
-          <Label>Appearance</Label>
-          <Description>Choose how Game Night looks on this account.</Description>
+      <h1 className="settings-title">Settings</h1>
+      <div className="settings-card-stack">
+        <div className="settings-card">
+          <div className="settings-label">Appearance</div>
+          <div className="settings-description">Choose how Game Night looks on this account.</div>
           <SegmentedControl options={THEME_OPTIONS} value={themeMode} onChange={handleChange} />
-        </Card>
+        </div>
 
-        <Card>
-          <Label>Turn Notifications</Label>
-          <Description>{notifCopy.description}</Description>
+        <div className="settings-card">
+          <div className="settings-label">Turn Notifications</div>
+          <div className="settings-description">{notifCopy.description}</div>
           {notifCopy.action === 'enable' && (
             <Button onClick={enable} disabled={notifCopy.disabled}>
               {notifCopy.label}
@@ -99,8 +66,8 @@ export function SettingsContainer() {
               {notifCopy.label}
             </Button>
           )}
-        </Card>
-      </CardStack>
+        </div>
+      </div>
     </PageWrap>
   );
 }

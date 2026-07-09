@@ -1,40 +1,4 @@
-import styled from 'styled-components';
-
-const Card = styled.div`
-  flex: none;
-  width: ${({ $w }) => $w}px;
-  height: ${({ $h }) => $h}px;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ $radius }) => $radius}px;
-  background: repeating-linear-gradient(
-    45deg,
-    ${({ $stripe }) => $stripe}33,
-    ${({ $stripe }) => $stripe}33 ${({ $stripeSize }) => $stripeSize}px,
-    ${({ theme }) => theme.colors.surface} ${({ $stripeSize }) => $stripeSize}px,
-    ${({ theme }) => theme.colors.surface} ${({ $stripeSize }) => $stripeSize * 2}px
-  );
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: ${({ $hasLabel }) => ($hasLabel ? '8px' : '0')};
-`;
-
-const Label = styled.div`
-  font-weight: 800;
-  font-size: 13px;
-  background: ${({ theme }) => theme.colors.surface};
-  color: #2e2013;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  padding: 2px 8px;
-`;
-
-const CardImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: ${({ $radius }) => $radius}px;
-`;
+import './PlayingCard.css';
 
 // Abstract, swappable placeholder for card art — real artwork is a future
 // rendering-layer concern (theme lookup by cardId) that never touches this
@@ -50,29 +14,34 @@ export function PlayingCard({
   label,
   frontImageUrl,
   backImageUrl,
+  className,
+  style,
   ...rest
 }) {
   const imageUrl = frontImageUrl || backImageUrl;
+  const hasLabel = !imageUrl && Boolean(label);
+
+  const cardStyle = {
+    width,
+    height,
+    borderRadius: radius,
+    background: `repeating-linear-gradient(45deg, ${stripe}33, ${stripe}33 ${stripeSize}px, var(--color-surface) ${stripeSize}px, var(--color-surface) ${stripeSize * 2}px)`,
+    ...style,
+  };
+
+  const classes = ['playing-card', hasLabel && 'playing-card--has-label', className].filter(Boolean).join(' ');
 
   if (imageUrl) {
     return (
-      <Card $w={width} $h={height} $radius={radius} $stripe={stripe} $stripeSize={stripeSize} $hasLabel={false} {...rest}>
-        <CardImage src={imageUrl} alt={label || ''} $radius={radius} />
-      </Card>
+      <div className={classes} style={cardStyle} {...rest}>
+        <img className="playing-card__image" src={imageUrl} alt={label || ''} style={{ borderRadius: radius }} />
+      </div>
     );
   }
 
   return (
-    <Card
-      $w={width}
-      $h={height}
-      $radius={radius}
-      $stripe={stripe}
-      $stripeSize={stripeSize}
-      $hasLabel={Boolean(label)}
-      {...rest}
-    >
-      {label && <Label>{label}</Label>}
-    </Card>
+    <div className={classes} style={cardStyle} {...rest}>
+      {label && <div className="playing-card__label">{label}</div>}
+    </div>
   );
 }

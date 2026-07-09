@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -17,111 +16,7 @@ import { followUser } from '../utils/follows.js';
 import { dismissActivity } from '../utils/activity.js';
 import { colorForId } from '../utils/colors.js';
 import { catalogArtFor } from '../utils/catalogArt.js';
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 28px;
-`;
-
-const Title = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 48px;
-  letter-spacing: -1px;
-
-  @media (max-width: 640px) {
-    font-size: 30px;
-    letter-spacing: -0.5px;
-  }
-`;
-
-const Subtitle = styled.div`
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.inkFaint};
-  margin-top: 6px;
-`;
-
-const Ctas = styled.div`
-  display: flex;
-  gap: 12px;
-
-  @media (max-width: 640px) {
-    flex-direction: column;
-    width: 100%;
-  }
-`;
-
-const JoinButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const CodeDots = styled.span`
-  font-family: ${({ theme }) => theme.fonts.mono};
-  letter-spacing: 2px;
-  color: rgba(46, 32, 19, 0.5);
-`;
-
-const JoinForm = styled.form`
-  display: flex;
-  gap: 8px;
-  align-items: center;
-`;
-
-const CodeInput = styled.input`
-  font-family: ${({ theme }) => theme.fonts.mono};
-  letter-spacing: 3px;
-  font-size: 15px;
-  font-weight: 700;
-  width: 100px;
-  padding: 12px;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ theme }) => theme.colors.surface};
-  color: #2e2013;
-  text-transform: uppercase;
-`;
-
-const JoinError = styled.div`
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.terracotta};
-  width: 100%;
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: ${({ theme }) => theme.gap.grid};
-`;
-
-const StatusText = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
-
-const ModalTitle = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 22px;
-  color: #2e2013;
-  margin-bottom: 8px;
-`;
-
-const ModalText = styled.div`
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(46, 32, 19, 0.75);
-  margin-bottom: 22px;
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-`;
+import './DashboardContainer.css';
 
 const STATUS_LABELS = {
   waiting: { label: 'Waiting…', filled: false },
@@ -145,6 +40,10 @@ export function DashboardContainer() {
   const { games } = useGameCatalog();
   const followingUids = new Set(friends.map((f) => f.uid));
   const gameNames = Object.fromEntries(games.map((g) => [g.id, g.displayName || g.id]));
+  // Rooms I'm already a player in (useMyRooms is playerUids array-contains
+  // me), regardless of how I joined — lets the activity feed show "Joined
+  // Game" on a still-pending invite instead of stale Join/Decline buttons.
+  const joinedRoomIds = new Set(rooms.map((r) => r.id));
   const [followBackBusyUid, setFollowBackBusyUid] = useState(null);
   const [respondBusyId, setRespondBusyId] = useState(null);
 
@@ -220,18 +119,19 @@ export function DashboardContainer() {
 
   return (
     <PageWrap>
-      <Header>
+      <div className="dashboard-header">
         <div>
-          <Title>My Games</Title>
-          <Subtitle>Pick up where you left off, or start something new.</Subtitle>
+          <div className="dashboard-title">My Games</div>
+          <div className="dashboard-subtitle">Pick up where you left off, or start something new.</div>
         </div>
-        <Ctas>
+        <div className="dashboard-ctas">
           <Button as={Link} to="/rooms/new">
             + Create Room
           </Button>
           {joinOpen ? (
-            <JoinForm onSubmit={handleJoinSubmit}>
-              <CodeInput
+            <form className="dashboard-join-form" onSubmit={handleJoinSubmit}>
+              <input
+                className="dashboard-code-input"
                 autoFocus
                 maxLength={4}
                 placeholder="CODE"
@@ -241,20 +141,26 @@ export function DashboardContainer() {
               <Button type="submit" disabled={joining}>
                 Join
               </Button>
-              {joinError && <JoinError>{joinError}</JoinError>}
-            </JoinForm>
+              {joinError && <div className="dashboard-join-error">{joinError}</div>}
+            </form>
           ) : (
-            <JoinButton as="button" type="button" $variant="outline" onClick={() => setJoinOpen(true)}>
-              Join via code <CodeDots>····</CodeDots>
-            </JoinButton>
+            <Button
+              as="button"
+              type="button"
+              $variant="outline"
+              className="dashboard-join-button"
+              onClick={() => setJoinOpen(true)}
+            >
+              Join via code <span className="dashboard-code-dots">····</span>
+            </Button>
           )}
-        </Ctas>
-      </Header>
+        </div>
+      </div>
 
-      {loading && <StatusText>Loading your games…</StatusText>}
+      {loading && <div className="dashboard-status-text">Loading your games…</div>}
 
       {!loading && (
-        <Grid>
+        <div className="dashboard-grid">
           {rooms.map((room) => {
             const status = STATUS_LABELS[room.status] || STATUS_LABELS.waiting;
             // Only the host can delete their own room, and only when it's
@@ -276,7 +182,7 @@ export function DashboardContainer() {
             );
           })}
           <EmptyStateCard />
-        </Grid>
+        </div>
       )}
 
       <ActivityFeed
@@ -289,20 +195,23 @@ export function DashboardContainer() {
         respondBusyId={respondBusyId}
         onJoinInvite={handleJoinInvite}
         onDeclineInvite={handleDeclineInvite}
+        joinedRoomIds={joinedRoomIds}
       />
 
       {deleteTarget && (
         <Modal onClose={() => !deleting && setDeleteTarget(null)}>
-          <ModalTitle>Delete this room?</ModalTitle>
-          <ModalText>This can't be undone — the room and its invite code will be gone for everyone.</ModalText>
-          <ModalActions>
+          <div className="dashboard-modal-title">Delete this room?</div>
+          <div className="dashboard-modal-text">
+            This can't be undone — the room and its invite code will be gone for everyone.
+          </div>
+          <div className="dashboard-modal-actions">
             <Button onClick={handleConfirmDelete} disabled={deleting}>
               {deleting ? 'Deleting…' : 'Delete'}
             </Button>
             <Button $variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
               Cancel
             </Button>
-          </ModalActions>
+          </div>
         </Modal>
       )}
     </PageWrap>

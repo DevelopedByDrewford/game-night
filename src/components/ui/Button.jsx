@@ -1,30 +1,14 @@
-import styled from 'styled-components';
+import './Button.css';
 
-export const Button = styled.button`
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 15px;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  padding: 12px 22px;
-  cursor: pointer;
-  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
-  flex-shrink: 0;
-  white-space: nowrap;
-  text-align: center;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+// Prop names ($variant/$fullWidth) and the polymorphic `as` prop are kept
+// identical to the old styled-components API on purpose — every existing
+// call site (33 across the app) uses them, and none needed to change for
+// this migration. `as` can be a string tag ('button', 'a') or a component
+// (e.g. react-router's Link) — same as styled-components' `as`.
+export function Button({ as: Component = 'button', $variant, $fullWidth, className, ...rest }) {
+  const classes = ['button', $variant === 'outline' && 'button--outline', $fullWidth && 'button--full-width', className]
+    .filter(Boolean)
+    .join(' ');
 
-  background: ${({ theme, $variant }) =>
-    $variant === 'outline' ? theme.colors.surface : theme.colors.terracotta};
-  color: ${({ theme, $variant }) => ($variant === 'outline' ? '#2E2013' : theme.colors.surface)};
-  box-shadow: ${({ theme, $variant }) => ($variant === 'outline' ? 'none' : theme.shadows.button)};
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
+  return <Component className={classes} {...rest} />;
+}

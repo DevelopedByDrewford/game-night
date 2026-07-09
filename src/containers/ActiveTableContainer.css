@@ -1,0 +1,165 @@
+.table-layout {
+  max-width: var(--max-width-grid);
+  margin: 0 auto;
+  padding: 28px 32px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .table-layout {
+    padding-bottom: 90px;
+    /* TableColumn's 420px min-width otherwise still competes for space on
+       the same flex line as the Action Log/Rules panels (removing just the
+       min-width isn't enough — flex-basis from the flex:2 shorthand wins
+       over width), squeezing the hand panel down to a sliver. Stack
+       everything full-width instead. */
+    flex-direction: column;
+  }
+}
+
+.table-column {
+  flex: 2;
+  min-width: 420px;
+}
+
+@media (max-width: 640px) {
+  .table-column {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Positioned ancestor for TurnReviewOverlay — on desktop the overlay covers
+   exactly this area (opponents + turn indicator/deck), leaving the hand,
+   action log, and rules panel visible; on mobile the overlay goes full-page
+   instead (see its own breakpoint), so this relative positioning is inert
+   there. */
+.table-top {
+  position: relative;
+}
+
+.table-opponents {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.table-turn-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.table-turn-indicator {
+  border: 1.5px dashed var(--color-terracotta);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-terracotta);
+}
+
+.table-deck-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-deck-count {
+  font-size: 13px;
+  color: var(--color-ink-faint);
+}
+
+.table-token-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.table-hand-panel {
+  border: 3px solid var(--color-terracotta);
+  background: #fdf0e5;
+  border-radius: 18px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.table-hand-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-terracotta);
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.table-hand-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.table-my-discard {
+  margin-top: 14px;
+}
+
+.table-picker-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: #2e2013;
+}
+
+.table-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.table-modal-card-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.table-modal-card-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: #2e2013;
+  margin-bottom: 8px;
+}
+
+.table-modal-card-description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(46, 32, 19, 0.75);
+  margin-bottom: 22px;
+}
+
+.table-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.table-message-text {
+  font-size: 13px;
+  margin-top: 10px;
+  color: var(--color-avocado);
+}
+
+.table-message-text--error {
+  color: var(--color-terracotta);
+}
+
+.table-status-text {
+  font-size: 14px;
+  color: var(--color-ink-fainter);
+}

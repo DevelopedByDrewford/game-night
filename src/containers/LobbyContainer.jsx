@@ -1,101 +1,30 @@
 import { useState } from 'react';
-import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { Button } from '../components/ui/Button.jsx';
-import { Avatar } from '../components/ui/Avatar.jsx';
 import { SeatRow } from '../components/game/SeatRow.jsx';
+import { InviteFriendsModal } from '../components/game/InviteFriendsModal.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
+import { usePresenceMap } from '../hooks/usePresenceMap.js';
 import { useFollowing } from '../hooks/useFollowing.js';
 import { leaveRoom, startGame, joinRoomById, inviteToRoom } from '../utils/rooms.js';
 import { colorForId } from '../utils/colors.js';
-
-const TitleRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
-`;
-
-const Title = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 36px;
-  letter-spacing: -1px;
-  text-shadow: 0 2px 14px rgba(227, 167, 62, 0.2);
-`;
-
-const Code = styled.div`
-  font-family: ${({ theme }) => theme.fonts.mono};
-  font-size: 16px;
-  letter-spacing: 3px;
-  color: ${({ theme }) => theme.colors.inkFaint};
-`;
-
-const Subtitle = styled.div`
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.inkFaint};
-  margin-bottom: 26px;
-`;
-
-const Seats = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 26px;
-`;
-
-const HelperText = styled.div`
-  text-align: center;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-  margin-top: 10px;
-`;
-
-const ErrorText = styled.div`
-  text-align: center;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.terracotta};
-  margin-top: 10px;
-`;
-
-const InviteSection = styled.div`
-  margin-top: 30px;
-  padding-top: 22px;
-  border-top: 1px dashed ${({ theme }) => theme.colors.border};
-`;
-
-const InviteTitle = styled.div`
-  font-weight: 700;
-  font-size: 15px;
-  margin-bottom: 12px;
-`;
-
-const InviteRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-`;
-
-const InviteName = styled.div`
-  flex: 1;
-  font-size: 14px;
-  font-weight: 600;
-  color: #2e2013;
-`;
+import './LobbyContainer.css';
 
 export function LobbyContainer({ room }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const presence = useRoomPresenceMap(room.id);
   const { friends } = useFollowing();
+  const friendPresence = usePresenceMap(friends.map((f) => f.uid));
   const [error, setError] = useState(null);
   const [starting, setStarting] = useState(false);
   const [joining, setJoining] = useState(false);
   const [invitedUids, setInvitedUids] = useState(new Set());
   const [inviteBusyUid, setInviteBusyUid] = useState(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const isHost = user?.uid === room.hostUid;
   const isMember = room.players.some((p) => p.uid === user?.uid);
@@ -182,61 +111,57 @@ export function LobbyContainer({ room }) {
     <>
       <RoomChromeHeader title="Waiting Room" />
       <PageWrap $maxWidth="640px" $padding="44px 32px">
-        <TitleRow>
-          <Title>Waiting Room</Title>
-          <Code>{room.code}</Code>
-        </TitleRow>
-        <Subtitle>
+        <div className="lobby-title-row">
+          <div className="lobby-title">Waiting Room</div>
+          <div className="lobby-code-row">
+            <div className="lobby-code">{room.code}</div>
+            {isMember && !roomFull && (
+              <Button $variant="outline" onClick={() => setInviteModalOpen(true)}>
+                Invite Friends
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="lobby-subtitle">
           {filledCount} of {seatCount} seats filled
-        </Subtitle>
+        </div>
 
-        <Seats>
+        <div className="lobby-seats">
           {seats.map((seat, i) => (
             <SeatRow key={seat.uid || i} seat={seat} onLeave={handleLeave} />
           ))}
-        </Seats>
+        </div>
 
         {!isMember ? (
           <>
             <Button $fullWidth disabled={joining || roomFull} onClick={handleJoin}>
               {roomFull ? 'Room Full' : joining ? 'Joining…' : 'Join Game'}
             </Button>
-            <HelperText>You're not in this room yet — join in to grab a seat.</HelperText>
+            <div className="lobby-helper-text">You're not in this room yet — join in to grab a seat.</div>
           </>
         ) : isHost ? (
           <>
             <Button $fullWidth disabled={!canStart || starting} onClick={handleStart}>
               Start Game
             </Button>
-            <HelperText>Only the host can start — need at least 2 players.</HelperText>
+            <div className="lobby-helper-text">Only the host can start — need at least 2 players.</div>
           </>
         ) : (
-          <HelperText>Waiting for the host to start the game…</HelperText>
+          <div className="lobby-helper-text">Waiting for the host to start the game…</div>
         )}
-        {error && <ErrorText>{error}</ErrorText>}
-
-        {isMember && !roomFull && invitableFriends.length > 0 && (
-          <InviteSection>
-            <InviteTitle>Invite a friend</InviteTitle>
-            {invitableFriends.map((friend) => {
-              const invited = invitedUids.has(friend.uid);
-              return (
-                <InviteRow key={friend.uid}>
-                  <Avatar size={32} color={colorForId(friend.uid)} imageUrl={friend.avatarUrl} />
-                  <InviteName>{friend.displayName}</InviteName>
-                  <Button
-                    $variant="outline"
-                    disabled={invited || inviteBusyUid === friend.uid}
-                    onClick={() => handleInvite(friend.uid)}
-                  >
-                    {invited ? 'Invited' : 'Invite'}
-                  </Button>
-                </InviteRow>
-              );
-            })}
-          </InviteSection>
-        )}
+        {error && <div className="lobby-error-text">{error}</div>}
       </PageWrap>
+
+      {inviteModalOpen && (
+        <InviteFriendsModal
+          friends={invitableFriends}
+          presence={friendPresence}
+          invitedUids={invitedUids}
+          busyUid={inviteBusyUid}
+          onInvite={handleInvite}
+          onClose={() => setInviteModalOpen(false)}
+        />
+      )}
     </>
   );
 }

@@ -1,0 +1,19 @@
+.page-wrap {
+  /* max-width/padding come in as CSS custom properties (set inline per
+     call site) rather than literal inline styles, specifically so the
+     mobile padding-bottom override below can still win the cascade for
+     that one edge — a literal inline `padding` would out-specificity any
+     class rule, including this media query, and hide content behind the
+     bottom tab bar on every screen that passes a custom padding. */
+  max-width: var(--page-wrap-max-width, var(--max-width-grid));
+  margin: 0 auto;
+  padding: var(--page-wrap-padding, 40px 32px);
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .page-wrap {
+    padding-bottom: 90px;
+  }
+}

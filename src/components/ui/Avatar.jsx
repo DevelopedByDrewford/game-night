@@ -1,37 +1,10 @@
 import { useState } from 'react';
-import styled from 'styled-components';
 import { StatusDot } from './StatusDot.jsx';
+import './Avatar.css';
 
-const Wrap = styled.div`
-  position: relative;
-  display: inline-block;
-  cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
-`;
-
-const Circle = styled.div`
-  width: ${({ $size }) => $size}px;
-  height: ${({ $size }) => $size}px;
-  border-radius: 50%;
-  background: ${({ $color }) => $color};
-  border: ${({ $borderWidth }) => $borderWidth}px solid
-    ${({ $borderColor, theme }) => $borderColor || theme.colors.border};
-  box-shadow: ${({ $boxShadow }) => $boxShadow || 'none'};
-  overflow: hidden;
-`;
-
-const Img = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-`;
-
-const DotWrap = styled.div`
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-`;
-
+// size/color/border*/boxShadow vary continuously per call site (not a fixed
+// set of variants), so they stay inline style rather than becoming CSS
+// classes — same split as StatusDot.
 export function Avatar({
   size = 42,
   color,
@@ -48,26 +21,24 @@ export function Avatar({
   const showImage = Boolean(imageUrl) && !imageFailed;
 
   return (
-    <Wrap $clickable={Boolean(onClick)} onClick={onClick}>
-      <Circle
-        $size={size}
-        $color={color}
-        $borderColor={borderColor}
-        $borderWidth={borderWidth}
-        $boxShadow={boxShadow}
+    <div className={`avatar${onClick ? ' avatar--clickable' : ''}`} onClick={onClick}>
+      <div
+        className="avatar__circle"
+        style={{
+          width: size,
+          height: size,
+          background: color,
+          border: `${borderWidth}px solid ${borderColor || 'var(--color-border)'}`,
+          boxShadow: boxShadow || 'none',
+        }}
       >
-        {showImage && <Img src={imageUrl} alt="" onError={() => setImageFailed(true)} />}
-      </Circle>
+        {showImage && <img className="avatar__image" src={imageUrl} alt="" onError={() => setImageFailed(true)} />}
+      </div>
       {showStatus && (
-        <DotWrap>
-          <StatusDot
-            online={online}
-            size={Math.max(12, Math.round(size * 0.33))}
-            ringWidth={2}
-            ringColor={statusRingColor}
-          />
-        </DotWrap>
+        <div className="avatar__status">
+          <StatusDot online={online} size={Math.max(12, Math.round(size * 0.33))} ringWidth={2} ringColor={statusRingColor} />
+        </div>
       )}
-    </Wrap>
+    </div>
   );
 }

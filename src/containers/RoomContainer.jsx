@@ -1,15 +1,10 @@
-import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
 import { useRoom } from '../hooks/useRoom.js';
 import { useRoomPresence } from '../hooks/useRoomPresence.js';
 import { LobbyContainer } from './LobbyContainer.jsx';
 import { ActiveTableContainer } from './ActiveTableContainer.jsx';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
-
-const StatusText = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-`;
+import './RoomContainer.css';
 
 // Single dynamic route (/rooms/:roomId) that branches on the room's own
 // status field, so a shared link/dashboard card always resumes to the right
@@ -22,7 +17,7 @@ export function RoomContainer() {
   if (loading) {
     return (
       <PageWrap $maxWidth="640px">
-        <StatusText>Loading room…</StatusText>
+        <div className="room-status-text">Loading room…</div>
       </PageWrap>
     );
   }
@@ -30,7 +25,7 @@ export function RoomContainer() {
   if (!room) {
     return (
       <PageWrap $maxWidth="640px">
-        <StatusText>This room doesn't exist or you don't have access to it.</StatusText>
+        <div className="room-status-text">This room doesn't exist or you don't have access to it.</div>
       </PageWrap>
     );
   }
@@ -40,7 +35,7 @@ export function RoomContainer() {
 
   return (
     <PageWrap $maxWidth="640px">
-      <StatusText>This game has ended.</StatusText>
+      <div className="room-status-text">This game has ended.</div>
     </PageWrap>
   );
 }

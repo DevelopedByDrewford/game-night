@@ -1,0 +1,26 @@
+.catalog-header {
+  margin-bottom: 28px;
+}
+
+.catalog-title {
+  font-family: var(--font-display);
+  font-size: 46px;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.catalog-subtitle {
+  font-size: 15px;
+  color: var(--color-ink-faint);
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--gap-grid-wide);
+}
+
+.catalog-status-text {
+  font-size: 14px;
+  color: var(--color-ink-fainter);
+}

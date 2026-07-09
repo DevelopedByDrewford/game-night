@@ -1,0 +1,15 @@
+.opponent-seat {
+  text-align: center;
+}
+
+.opponent-seat__name {
+  font-weight: 700;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.opponent-seat__status {
+  font-size: 11px;
+  color: var(--color-ink-fainter);
+  margin-bottom: 6px;
+}

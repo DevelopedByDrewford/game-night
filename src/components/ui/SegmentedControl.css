@@ -1,0 +1,22 @@
+.segmented-control {
+  display: flex;
+  gap: 10px;
+}
+
+.segmented-control__option {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border-radius: var(--radius-card-sm);
+  border: 1.5px solid var(--color-border);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--color-surface);
+  color: #2e2013;
+}
+
+.segmented-control__option--active {
+  background: var(--color-terracotta);
+  color: var(--color-surface);
+}

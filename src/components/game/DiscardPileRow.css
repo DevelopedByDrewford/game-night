@@ -1,0 +1,26 @@
+.discard-pile {
+  text-align: center;
+  cursor: default;
+}
+
+.discard-pile--clickable {
+  cursor: pointer;
+}
+
+.discard-pile__label {
+  font-size: 10px;
+  color: var(--color-ink-fainter);
+  margin-bottom: 4px;
+}
+
+.discard-pile__row {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.discard-pile__empty {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-ink-fainter);
+}

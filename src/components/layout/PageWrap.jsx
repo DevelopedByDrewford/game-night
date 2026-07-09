@@ -1,13 +1,16 @@
-import styled from 'styled-components';
+import './PageWrap.css';
 
-export const PageWrap = styled.div`
-  max-width: ${({ $maxWidth, theme }) => $maxWidth || theme.maxWidth.grid};
-  margin: 0 auto;
-  padding: ${({ $padding }) => $padding || '40px 32px'};
-  position: relative;
-  z-index: 1;
-
-  @media (max-width: 640px) {
-    padding-bottom: 90px;
-  }
-`;
+export function PageWrap({ $maxWidth, $padding, className, children, ...rest }) {
+  return (
+    <div
+      className={['page-wrap', className].filter(Boolean).join(' ')}
+      style={{
+        ...($maxWidth ? { '--page-wrap-max-width': $maxWidth } : null),
+        ...($padding ? { '--page-wrap-padding': $padding } : null),
+      }}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+}

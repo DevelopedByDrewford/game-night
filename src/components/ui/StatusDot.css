@@ -1,0 +1,13 @@
+.status-dot {
+  flex: none;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.status-dot--online {
+  background: var(--color-avocado);
+}
+
+.status-dot--offline {
+  background: var(--color-muted);
+}
