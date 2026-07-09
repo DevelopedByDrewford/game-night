@@ -243,6 +243,10 @@ describe('turn notifications', () => {
     const firstUid = getDoc('gameRooms/notif1/state/current').turnUid;
     expect(messaging.sendEachForMulticast).toHaveBeenCalledTimes(1);
     expect(messaging.sendEachForMulticast.mock.calls[0][0].tokens).toEqual([`tok-${firstUid}`]);
+    expect(messaging.sendEachForMulticast.mock.calls[0][0].notification).toEqual({
+      title: "It's your turn!",
+      body: "It's your move in Love Letter — Room TEST.",
+    });
   });
 
   it('does not send anything when the player has no registered token', async () => {

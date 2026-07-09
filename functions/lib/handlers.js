@@ -14,6 +14,11 @@ import {
 // moves domains. Only used to build the deep link a turn-notification opens.
 const SITE_ORIGIN = 'https://game-night.drewford.dev';
 
+// functions/ is a separate deployable from src/ (see scripts/seedCatalog.mjs
+// for the frontend's copy of these same display names) — duplicated rather
+// than shared, same as the card definitions in deck.js.
+const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter' };
+
 function emptyMap(uids, value) {
   return Object.fromEntries(uids.map((uid) => [uid, value]));
 }
@@ -87,11 +92,12 @@ export function createHandlers({ db, FieldValue, messaging }) {
       const tokens = userSnap.exists ? userSnap.data()?.pushTokens || [] : [];
       if (tokens.length === 0) return;
 
+      const gameName = GAME_DISPLAY_NAMES[room.gameType] || 'the game';
       const response = await messaging.sendEachForMulticast({
         tokens,
         notification: {
           title: "It's your turn!",
-          body: `${playerName(room, uid)}, it's your move in Room ${room.code}.`,
+          body: `It's your move in ${gameName} — Room ${room.code}.`,
         },
         webpush: {
           fcmOptions: { link: `${SITE_ORIGIN}/rooms/${roomId}` },
