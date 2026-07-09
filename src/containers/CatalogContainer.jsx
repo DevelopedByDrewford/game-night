@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { CatalogCard } from '../components/game/CatalogCard.jsx';
 import { useGameCatalog } from '../hooks/useGameCatalog.js';
+import { catalogArtFor } from '../utils/catalogArt.js';
 
 const Header = styled.div`
   margin-bottom: 28px;
@@ -65,6 +66,7 @@ export function CatalogContainer() {
               range={playerRange(game)}
               available={Boolean(game.active)}
               stripeColor={game.active ? '#C8592F' : '#8a8272'}
+              imageUrl={catalogArtFor(game.id)}
             />
           ))}
         </Grid>

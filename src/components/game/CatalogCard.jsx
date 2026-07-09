@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 
@@ -26,6 +27,13 @@ const Art = styled.div`
   font-size: 11px;
   color: rgba(46, 32, 19, 0.4);
   border-bottom: 1px solid rgba(46, 32, 19, 0.12);
+`;
+
+const ArtImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 `;
 
 const Body = styled.div`
@@ -69,10 +77,19 @@ const ComingSoon = styled.div`
   font-size: 13px;
 `;
 
-export function CatalogCard({ name, range, available, stripeColor }) {
+export function CatalogCard({ name, range, available, stripeColor, imageUrl }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(imageUrl) && !imageFailed;
+
   return (
     <Card $available={available}>
-      <Art $stripe={stripeColor}>game art</Art>
+      <Art $stripe={stripeColor}>
+        {showImage ? (
+          <ArtImage src={imageUrl} alt="" onError={() => setImageFailed(true)} />
+        ) : (
+          'game art'
+        )}
+      </Art>
       <Body>
         <Name>{name}</Name>
         <Range>{range}</Range>

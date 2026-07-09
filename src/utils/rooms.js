@@ -1,4 +1,4 @@
-import { doc, runTransaction, updateDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { doc, runTransaction, updateDoc, deleteDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from './firebase.js';
 import { generateInviteCode } from './inviteCode.js';
@@ -97,4 +97,21 @@ export async function startGame({ roomId }) {
 
 export async function endGameEarly({ roomId }) {
   return updateDoc(doc(db, 'gameRooms', roomId), { status: 'completed', updatedAt: serverTimestamp() });
+}
+
+// Host-only cleanup for a room that's not actively being played (waiting on
+// players, or already completed) — e.g. an accidental solo room that never
+// filled up, with no other player around to hit "End Game Early" first.
+// Frees the invite code before deleting the room doc, since the code's
+// delete rule needs to read the still-existing room to check hostUid/status
+// — a failure there is non-fatal (worst case a squatted code, which
+// createRoom already retries around on collision), so the room itself still
+// gets deleted either way.
+export async function deleteRoom({ roomId, code }) {
+  try {
+    await deleteDoc(doc(db, 'roomCodes', code));
+  } catch (err) {
+    console.error('[deleteRoom] failed to free invite code', err);
+  }
+  await deleteDoc(doc(db, 'gameRooms', roomId));
 }

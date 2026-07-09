@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Card = styled(Link)`
   display: block;
+  position: relative;
   background: ${({ theme }) => theme.colors.surface};
   border: 1.5px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card};
@@ -10,6 +11,25 @@ const Card = styled(Link)`
   box-shadow: ${({ theme }) => theme.shadows.card};
   text-decoration: none;
   color: inherit;
+`;
+
+const DeleteButton = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  background: #fff;
+  color: #2e2013;
+  font-size: 14px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Header = styled.div`
@@ -78,9 +98,22 @@ const Badge = styled.div`
   border: 1.5px solid ${({ theme }) => theme.colors.border};
 `;
 
-export function GameCard({ to, name, subtitle = 'Love Letter', playerColors, status, statusFilled }) {
+export function GameCard({ to, name, subtitle = 'Love Letter', playerColors, status, statusFilled, onDelete }) {
   return (
     <Card to={to}>
+      {onDelete && (
+        <DeleteButton
+          type="button"
+          aria-label="Delete room"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          ×
+        </DeleteButton>
+      )}
       <Header>
         <Thumb />
         <div>
