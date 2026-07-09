@@ -127,4 +127,21 @@ describe('ActiveTableContainer', () => {
       guessCardId: 'priest',
     });
   });
+
+  it('opens the discards modal listing every player when clicking your own discard row', async () => {
+    renderTable();
+    await userEvent.click(screen.getByText('Your discard'));
+
+    expect(screen.getByText('Discard piles')).toBeInTheDocument();
+    expect(screen.getByText('Me (You)')).toBeInTheDocument();
+    expect(screen.getAllByText('Opp').length).toBeGreaterThan(0);
+  });
+
+  it('opens the discards modal when clicking an opponent discard row', async () => {
+    renderTable();
+    await userEvent.click(screen.getByText('Discard'));
+
+    expect(screen.getByText('Discard piles')).toBeInTheDocument();
+    expect(screen.getByText('Me (You)')).toBeInTheDocument();
+  });
 });

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { OpponentSeat } from '../components/game/OpponentSeat.jsx';
 import { PlayingCard } from '../components/game/PlayingCard.jsx';
+import { DiscardPileRow } from '../components/game/DiscardPileRow.jsx';
+import { DiscardsModal } from '../components/game/DiscardsModal.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
 import { RulesReferencePanel } from '../components/game/RulesReferencePanel.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -102,6 +104,10 @@ const HandCards = styled.div`
   gap: 12px;
 `;
 
+const MyDiscardWrap = styled.div`
+  margin-top: 14px;
+`;
+
 const PickerTitle = styled.div`
   font-weight: 700;
   font-size: 14px;
@@ -166,6 +172,7 @@ export function ActiveTableContainer({ room }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null); // { text, error }
   const [ending, setEnding] = useState(false);
+  const [discardsModalOpen, setDiscardsModalOpen] = useState(false);
 
   const isHost = user?.uid === room.hostUid;
 
@@ -300,10 +307,18 @@ export function ActiveTableContainer({ room }) {
         statusLabel: `${statusLabel} · ${tokens} tok`,
         discards: state.discardPiles[p.uid] || [],
         isCurrentTurn: state.turnUid === p.uid,
+        onDiscardClick: () => setDiscardsModalOpen(true),
       };
     });
 
   const myTokens = state.tokens[user.uid] || 0;
+  const myDiscards = state.discardPiles[user.uid] || [];
+  const allDiscardPlayers = room.players.map((p) => ({
+    uid: p.uid,
+    name: p.displayName,
+    discards: state.discardPiles[p.uid] || [],
+    isYou: p.uid === user.uid,
+  }));
 
   return (
     <>
@@ -363,6 +378,10 @@ export function ActiveTableContainer({ room }) {
 
             {message && <MessageText $error={message.error}>{message.text}</MessageText>}
           </HandPanel>
+
+          <MyDiscardWrap>
+            <DiscardPileRow discards={myDiscards} label="Your discard" onClick={() => setDiscardsModalOpen(true)} />
+          </MyDiscardWrap>
         </TableColumn>
 
         <ActionLogPanel entries={entries.map((e) => e.message)} />
@@ -409,6 +428,10 @@ export function ActiveTableContainer({ room }) {
             Cancel
           </Button>
         </Modal>
+      )}
+
+      {discardsModalOpen && (
+        <DiscardsModal players={allDiscardPlayers} onClose={() => setDiscardsModalOpen(false)} />
       )}
 
       {pending?.cardId === 'guard' && pending.targetUid && (

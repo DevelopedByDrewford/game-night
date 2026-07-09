@@ -18,12 +18,12 @@ const Panel = styled.div`
   border-radius: ${({ theme }) => theme.radii.card};
   box-shadow: ${({ theme }) => theme.shadows.card};
   padding: 28px;
-  max-width: 380px;
+  max-width: ${({ $wide }) => ($wide ? '640px' : '380px')};
   width: 100%;
   text-align: center;
 `;
 
-export function Modal({ onClose, children }) {
+export function Modal({ onClose, children, wide }) {
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === 'Escape') onClose();
@@ -34,7 +34,7 @@ export function Modal({ onClose, children }) {
 
   return (
     <Overlay onClick={onClose}>
-      <Panel onClick={(e) => e.stopPropagation()}>{children}</Panel>
+      <Panel $wide={wide} onClick={(e) => e.stopPropagation()}>{children}</Panel>
     </Overlay>
   );
 }

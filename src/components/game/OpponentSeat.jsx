@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { Avatar } from '../ui/Avatar.jsx';
-import { PlayingCard } from './PlayingCard.jsx';
-import { frontImageFor } from '../../utils/cardArt.js';
+import { DiscardPileRow } from './DiscardPileRow.jsx';
 
 const Seat = styled.div`
   text-align: center;
@@ -19,19 +18,7 @@ const Status = styled.div`
   margin-bottom: 6px;
 `;
 
-const DiscardLabel = styled.div`
-  font-size: 10px;
-  color: ${({ theme }) => theme.colors.inkFainter};
-  margin-bottom: 4px;
-`;
-
-const Discards = styled.div`
-  display: flex;
-  gap: 3px;
-  justify-content: center;
-`;
-
-export function OpponentSeat({ name, color, online, statusLabel, discards = [], isCurrentTurn }) {
+export function OpponentSeat({ name, color, online, statusLabel, discards = [], isCurrentTurn, onDiscardClick }) {
   return (
     <Seat>
       <Avatar
@@ -46,20 +33,7 @@ export function OpponentSeat({ name, color, online, statusLabel, discards = [], 
       />
       <Name>{name}</Name>
       <Status>{statusLabel}</Status>
-      <DiscardLabel>Discard</DiscardLabel>
-      <Discards>
-        {discards.map((cardId, i) => (
-          <PlayingCard
-            key={`${cardId}-${i}`}
-            width={22}
-            height={30}
-            radius={4}
-            stripe="#C8592F"
-            stripeSize={4}
-            frontImageUrl={frontImageFor(cardId)}
-          />
-        ))}
-      </Discards>
+      <DiscardPileRow discards={discards} onClick={onDiscardClick} />
     </Seat>
   );
 }
