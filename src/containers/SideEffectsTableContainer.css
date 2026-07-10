@@ -7,12 +7,19 @@
   flex-wrap: wrap;
   position: relative;
   z-index: 1;
+  /* Psyche/hand card size, read by PsycheCard.jsx and
+     SideEffectsTableContainer.jsx's hand cards — ~25% larger than the base
+     78x131 on desktop; the mobile breakpoint below reverts to the base size. */
+  --se-card-width: 98px;
+  --se-card-height: 164px;
 }
 
 @media (max-width: 640px) {
   .side-effects-table-layout {
     padding-bottom: 104px;
     flex-direction: column;
+    --se-card-width: 78px;
+    --se-card-height: 131px;
   }
 }
 

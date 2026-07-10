@@ -3,6 +3,14 @@
   flex: none;
 }
 
+.psyche-card--clickable {
+  cursor: pointer;
+}
+
+.psyche-card--clickable:hover {
+  filter: brightness(1.05);
+}
+
 .psyche-card__drug-badge {
   position: absolute;
   left: 4px;
@@ -21,6 +29,15 @@
   box-shadow: 0 2px 6px rgba(46, 32, 19, 0.25);
 }
 
+.psyche-card--large .psyche-card__drug-badge {
+  font-size: 15px;
+  padding: 7px 10px;
+  bottom: 14px;
+  left: 8px;
+  right: 8px;
+  border-radius: 10px;
+}
+
 .psyche-card__episode-overlay {
   position: absolute;
   top: -10px;
@@ -28,4 +45,9 @@
   transform: rotate(-14deg);
   pointer-events: none;
   filter: drop-shadow(0 4px 8px rgba(46, 32, 19, 0.35));
+}
+
+.psyche-card--large .psyche-card__episode-overlay {
+  top: -18px;
+  left: -18px;
 }

@@ -46,6 +46,7 @@ function renderTable() {
 describe('SideEffectsTableContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.innerWidth = 1024; // known baseline — tests that care override explicitly
     fakeState = {
       ruleset: 'base',
       turnOrder: ['me', 'opp'],
@@ -79,10 +80,23 @@ describe('SideEffectsTableContainer', () => {
     expect(screen.getByText(/madness treatment/i)).toBeInTheDocument();
   });
 
-  it('treat: clicking a matching drug in hand and confirming plays it', async () => {
+  it('hand card click opens the fullscreen carousel first, not the action picker', async () => {
     renderTable();
 
     await userEvent.click(screen.getByText('Anxiety Treatment'));
+    expect(screen.getByText('Your Hand')).toBeInTheDocument();
+    expect(screen.queryByText(/treats: anxiety/i)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Play This Card' }));
+    expect(screen.queryByText('Your Hand')).not.toBeInTheDocument();
+    expect(screen.getByText(/treats: anxiety/i)).toBeInTheDocument();
+  });
+
+  it('treat: opening the carousel, playing the card, and confirming plays it', async () => {
+    renderTable();
+
+    await userEvent.click(screen.getByText('Anxiety Treatment'));
+    await userEvent.click(screen.getByRole('button', { name: 'Play This Card' }));
     expect(screen.getByText(/treats: anxiety/i)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: /treat anxiety/i }));
@@ -101,6 +115,7 @@ describe('SideEffectsTableContainer', () => {
     renderTable();
 
     await userEvent.click(screen.getByText('Gambling Addiction'));
+    await userEvent.click(screen.getByRole('button', { name: 'Play This Card' }));
     expect(screen.getByText(/give gambling addiction/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Opp' }));
 
@@ -118,6 +133,7 @@ describe('SideEffectsTableContainer', () => {
     renderTable();
 
     await userEvent.click(screen.getByText('Therapy'));
+    await userEvent.click(screen.getByRole('button', { name: 'Play This Card' }));
     expect(screen.getByRole('button', { name: /discard anxiety/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /discard tremors/i })).not.toBeInTheDocument();
 
@@ -133,6 +149,7 @@ describe('SideEffectsTableContainer', () => {
     renderTable();
 
     await userEvent.click(screen.getByText('Episode'));
+    await userEvent.click(screen.getByRole('button', { name: 'Play This Card' }));
     await userEvent.click(screen.getByRole('button', { name: 'Opp' }));
     expect(screen.getByRole('button', { name: 'Madness' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Madness' }));
@@ -146,6 +163,55 @@ describe('SideEffectsTableContainer', () => {
         targetDisorderId: 'madness',
       })
     );
+  });
+
+  it('carousel: on a narrow viewport, swiping through the hand with Next/Previous updates progress and the played card', async () => {
+    window.innerWidth = 500; // below the grid-mode breakpoint — forces the slider
+    fakeHand = ['anxietyTreatment', 'therapy'];
+    fakeState.psyches.me = [
+      { disorderId: 'anxiety', drugId: null, episodeActive: null },
+      { disorderId: 'depression', drugId: null, episodeActive: null },
+    ];
+    renderTable();
+
+    await userEvent.click(screen.getByText('Anxiety Treatment'));
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next card' }));
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next card' })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Play This Card' }));
+    await userEvent.click(screen.getByRole('button', { name: /discard depression/i }));
+    expect(playAction).toHaveBeenCalledWith(
+      expect.objectContaining({ actionType: 'therapy', cardId: 'therapy', ownDisorderId: 'depression' })
+    );
+  });
+
+  it('carousel: on a wide viewport with few enough cards, shows every card at once — no slider', async () => {
+    window.innerWidth = 1200;
+    fakeHand = ['anxietyTreatment', 'therapy'];
+    renderTable();
+
+    await userEvent.click(screen.getByText('Anxiety Treatment'));
+    // Both hand cards visible simultaneously (the background hand panel is
+    // still mounted behind the modal, hence 2 of each), slider chrome absent.
+    expect(screen.getAllByText('Anxiety Treatment')).toHaveLength(2);
+    expect(screen.getAllByText('Therapy')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Next card' })).not.toBeInTheDocument();
+    expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
+    // Each card gets its own description and Play button in grid mode.
+    expect(screen.getAllByRole('button', { name: 'Play This Card' })).toHaveLength(2);
+    expect(screen.getByText(/treats anxiety\./i)).toBeInTheDocument();
+  });
+
+  it('carousel: clicking a Psyche card opens a view-only carousel (no Play button)', async () => {
+    renderTable();
+
+    await userEvent.click(screen.getByText('Anxiety'));
+    expect(screen.getByText("Me's Psyche")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Play This Card' })).not.toBeInTheDocument();
+    expect(screen.getByText(/inflictor may take 1 card/i)).toBeInTheDocument();
   });
 
   it('End Turn calls endTurn with no discards when hand is at or under the cap', async () => {

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { PsycheBoard } from '../components/sideEffects/PsycheBoard.jsx';
+import { PsycheCard } from '../components/sideEffects/PsycheCard.jsx';
+import { CardCarouselModal } from '../components/sideEffects/CardCarouselModal.jsx';
 import { PlayingCard } from '../components/game/PlayingCard.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
 import { TurnReviewOverlay } from '../components/game/TurnReviewOverlay.jsx';
@@ -17,13 +19,22 @@ import { useRoomPresenceMap } from '../hooks/useRoomPresenceMap.js';
 import { endGameEarly } from '../utils/rooms.js';
 import { playAction, endTurn } from '../utils/sideEffectsGameplay.js';
 import { colorForId } from '../utils/colors.js';
-import { CARD_DEFS, cardName, cardType, vulnerableDisorders } from '../utils/sideEffectsCards.js';
+import { CARD_DEFS, cardName, cardType, cardDescription, vulnerableDisorders } from '../utils/sideEffectsCards.js';
 import { frontImageFor } from '../utils/sideEffectsCardArt.js';
 import { roomLabel } from '../utils/roomLabel.js';
 import './SideEffectsTableContainer.css';
 
-const HAND_CARD_WIDTH = 78;
-const HAND_CARD_HEIGHT = 131;
+// Matches PsycheCard's sizing var so hand cards and Psyche cards stay the
+// same size — set on .side-effects-table-layout in
+// SideEffectsTableContainer.css, larger on desktop than mobile.
+const HAND_CARD_WIDTH = 'var(--se-card-width, 78px)';
+const HAND_CARD_HEIGHT = 'var(--se-card-height, 131px)';
+
+// Enlarged size for the fullscreen card carousel — fixed rather than the
+// --se-card-width var since this should stay big regardless of the table's
+// own responsive card sizing.
+const CAROUSEL_CARD_WIDTH = 220;
+const CAROUSEL_CARD_HEIGHT = 369;
 
 export function SideEffectsTableContainer({ room }) {
   const navigate = useNavigate();
@@ -40,6 +51,9 @@ export function SideEffectsTableContainer({ room }) {
   const [ending, setEnding] = useState(false);
   const [discardPickerOpen, setDiscardPickerOpen] = useState(false);
   const [discardSelection, setDiscardSelection] = useState([]);
+  // { kind: 'hand' } | { kind: 'psyche', uid } | null — which fullscreen
+  // card carousel (if any) is open, and starting index within it.
+  const [carousel, setCarousel] = useState(null);
 
   // Turn review — same lastSeenSeq/localStorage mechanism as the other two
   // games' table containers.
@@ -93,10 +107,28 @@ export function SideEffectsTableContainer({ room }) {
     }
   }
 
+  // Opens the target/action picker directly (used by the carousel's "Play
+  // This Card" button, and by the discard-picker's card cap flow) — the
+  // carousel itself is purely a browse layer, this is the actual play step.
   function handleHandCardClick(cardId) {
     if (!myTurn || submitting || movesRemaining <= 0 || selectedCardId) return;
+    setCarousel(null);
     setSelectedCardId(cardId);
     setActionDraft({});
+  }
+
+  function openHandCarousel(index) {
+    if (submitting) return;
+    setCarousel({ kind: 'hand', startIndex: index });
+  }
+
+  function openPsycheCarousel(uid, index) {
+    if (submitting) return;
+    setCarousel({ kind: 'psyche', uid, startIndex: index });
+  }
+
+  function closeCarousel() {
+    setCarousel(null);
   }
 
   async function runEndTurn(discardCardIds) {
@@ -439,6 +471,7 @@ export function SideEffectsTableContainer({ room }) {
                 online={Boolean(presence[p.uid])}
                 isCurrentTurn={state.turnUid === p.uid}
                 psyche={state.psyches[p.uid] || []}
+                onCardClick={(index) => openPsycheCarousel(p.uid, index)}
               />
             ))}
           </div>
@@ -455,8 +488,8 @@ export function SideEffectsTableContainer({ room }) {
                   stripe="#C8592F"
                   label={cardName(cardId)}
                   frontImageUrl={frontImageFor(cardId)}
-                  onClick={() => handleHandCardClick(cardId)}
-                  style={{ cursor: myTurn && movesRemaining > 0 && !submitting ? 'pointer' : 'default' }}
+                  onClick={() => openHandCarousel(i)}
+                  style={{ cursor: submitting ? 'default' : 'pointer' }}
                 />
               ))}
             </div>
@@ -480,6 +513,40 @@ export function SideEffectsTableContainer({ room }) {
           </FullRulesButton>
         </div>
       </div>
+
+      {carousel && (
+        <CardCarouselModal
+          items={carousel.kind === 'hand' ? hand : state.psyches[carousel.uid] || []}
+          startIndex={carousel.startIndex}
+          onClose={closeCarousel}
+          title={carousel.kind === 'hand' ? 'Your Hand' : `${nameForUid(carousel.uid)}'s Psyche`}
+          renderCard={(item) =>
+            carousel.kind === 'hand' ? (
+              <PlayingCard
+                width={CAROUSEL_CARD_WIDTH}
+                height={CAROUSEL_CARD_HEIGHT}
+                radius={16}
+                stripe="#C8592F"
+                label={cardName(item)}
+                frontImageUrl={frontImageFor(item)}
+              />
+            ) : (
+              <PsycheCard entry={item} width={CAROUSEL_CARD_WIDTH} height={CAROUSEL_CARD_HEIGHT} large />
+            )
+          }
+          renderDescription={(item) => cardDescription(carousel.kind === 'hand' ? item : item.disorderId)}
+          renderActions={
+            carousel.kind === 'hand'
+              ? (item) =>
+                  myTurn && movesRemaining > 0 ? (
+                    <Button onClick={() => handleHandCardClick(item)} disabled={submitting}>
+                      Play This Card
+                    </Button>
+                  ) : null
+              : undefined
+          }
+        />
+      )}
 
       {selectedCardId && (
         <Modal onClose={closeActionModal}>
