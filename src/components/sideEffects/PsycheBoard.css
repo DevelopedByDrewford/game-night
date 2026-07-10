@@ -1,0 +1,36 @@
+.psyche-board {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-card-sm);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.psyche-board--current-turn {
+  box-shadow: 0 0 0 2px var(--color-terracotta), var(--shadow-card);
+}
+
+.psyche-board__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.psyche-board__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #2e2013;
+}
+
+.psyche-board__cards {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.psyche-board__empty {
+  font-size: 13px;
+  color: var(--color-avocado, #7c8c4a);
+  font-weight: 700;
+}

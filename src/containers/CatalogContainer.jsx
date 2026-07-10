@@ -31,7 +31,7 @@ export function CatalogContainer() {
 
       {!loading && games.length > 0 && (
         <div className="catalog-grid">
-          {games.map((game) => (
+          {games.map((game, i) => (
             <CatalogCard
               key={game.id}
               gameType={game.id}
@@ -40,6 +40,7 @@ export function CatalogContainer() {
               available={Boolean(game.active)}
               stripeColor={game.active ? '#C8592F' : '#8a8272'}
               imageUrl={catalogArtFor(game.id)}
+              variantIndex={i}
             />
           ))}
         </div>

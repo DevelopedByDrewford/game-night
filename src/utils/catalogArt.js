@@ -5,6 +5,7 @@
 export const CATALOG_ART = {
   'love-letter': '/catalog-art/love-letter.png',
   'a-little-wordy': '/catalog-art/a_little_wordy.png',
+  'side-effects': '/catalog-art/side-effects.png',
 };
 
 export function catalogArtFor(gameType) {

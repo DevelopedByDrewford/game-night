@@ -11,6 +11,7 @@ import { usePresenceMap } from '../hooks/usePresenceMap.js';
 import { useFollowing } from '../hooks/useFollowing.js';
 import { leaveRoom, startGame, joinRoomById, inviteToRoom } from '../utils/rooms.js';
 import { dealTiles } from '../utils/wordyGameplay.js';
+import { dealPsyches } from '../utils/sideEffectsGameplay.js';
 import { colorForId } from '../utils/colors.js';
 import { roomLabel } from '../utils/roomLabel.js';
 import './LobbyContainer.css';
@@ -73,6 +74,8 @@ export function LobbyContainer({ room }) {
     try {
       if (room.gameType === 'a-little-wordy') {
         await dealTiles({ roomId: room.id });
+      } else if (room.gameType === 'side-effects') {
+        await dealPsyches({ roomId: room.id });
       } else {
         await startGame({ roomId: room.id });
       }

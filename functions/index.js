@@ -5,6 +5,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { createHandlers } from './lib/handlers.js';
 import { createWordyHandlers } from './lib/wordyHandlers.js';
+import { createHandlers as createSideEffectsHandlers } from './lib/sideEffectsHandlers.js';
 import { createSocialHandlers } from './lib/social.js';
 
 initializeApp();
@@ -12,6 +13,7 @@ const db = getFirestore();
 const messaging = getMessaging();
 const handlers = createHandlers({ db, FieldValue, messaging });
 const wordyHandlers = createWordyHandlers({ db, FieldValue, messaging });
+const sideEffectsHandlers = createSideEffectsHandlers({ db, FieldValue, messaging });
 const socialHandlers = createSocialHandlers({ db, FieldValue, messaging });
 
 export const startGame = onCall(handlers.startGame);
@@ -25,6 +27,10 @@ export const activateClue = onCall(wordyHandlers.activateClue);
 export const respondToRhyme = onCall(wordyHandlers.respondToRhyme);
 export const guessWord = onCall(wordyHandlers.guessWord);
 export const submitTiebreakerWord = onCall(wordyHandlers.submitTiebreakerWord);
+
+export const dealPsyches = onCall(sideEffectsHandlers.dealPsyches);
+export const playSideEffectsAction = onCall(sideEffectsHandlers.playAction);
+export const endSideEffectsTurn = onCall(sideEffectsHandlers.endTurn);
 
 export const onFollowCreated = onDocumentCreated('users/{followerUid}/follows/{followedUid}', (event) =>
   socialHandlers.onFollowed({

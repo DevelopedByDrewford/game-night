@@ -7,7 +7,7 @@ export const SITE_ORIGIN = 'https://game-night.drewford.dev';
 // than shared, same as the card definitions in deck.js. Shared here (rather
 // than living in handlers.js) since both handlers.js and social.js build
 // notification/activity text that needs a display name.
-export const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter', 'a-little-wordy': 'A Little Wordy' };
+export const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter', 'a-little-wordy': 'A Little Wordy', 'side-effects': 'Side Effects' };
 
 // Room names are optional and don't need to be unique — the invite code is
 // what actually identifies/joins a room. Every push/activity surface that

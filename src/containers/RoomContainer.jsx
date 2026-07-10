@@ -4,6 +4,7 @@ import { useRoomPresence } from '../hooks/useRoomPresence.js';
 import { LobbyContainer } from './LobbyContainer.jsx';
 import { ActiveTableContainer } from './ActiveTableContainer.jsx';
 import { WordyTableContainer } from './WordyTableContainer.jsx';
+import { SideEffectsTableContainer } from './SideEffectsTableContainer.jsx';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import './RoomContainer.css';
@@ -37,7 +38,9 @@ export function RoomContainer() {
 
   if (room.status === 'waiting') return <LobbyContainer room={room} />;
   if (room.status === 'active') {
-    return room.gameType === 'a-little-wordy' ? <WordyTableContainer room={room} /> : <ActiveTableContainer room={room} />;
+    if (room.gameType === 'a-little-wordy') return <WordyTableContainer room={room} />;
+    if (room.gameType === 'side-effects') return <SideEffectsTableContainer room={room} />;
+    return <ActiveTableContainer room={room} />;
   }
 
   return (

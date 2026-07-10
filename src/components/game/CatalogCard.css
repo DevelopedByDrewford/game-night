@@ -1,25 +1,19 @@
 .catalog-card {
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-card);
+  position: relative;
+  border: 1.5px solid;
   overflow: hidden;
-  box-shadow: var(--shadow-card);
-  opacity: 1;
-}
-
-.catalog-card--unavailable {
-  opacity: 0.55;
 }
 
 .catalog-card__art {
   height: 150px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
   font-size: 11px;
   color: rgba(46, 32, 19, 0.4);
-  border-bottom: 1px solid rgba(46, 32, 19, 0.12);
+  border-bottom: 2px solid;
 }
 
 .catalog-card__art-image {
@@ -30,6 +24,7 @@
 }
 
 .catalog-card__body {
+  position: relative;
   padding: 16px;
 }
 
@@ -50,7 +45,7 @@
   display: block;
   background: var(--color-terracotta);
   color: var(--color-surface);
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid rgba(46, 32, 19, 0.16);
   border-radius: 20px;
   padding: 9px;
   text-align: center;
@@ -68,4 +63,14 @@
   text-align: center;
   font-weight: 700;
   font-size: 13px;
+}
+
+.catalog-card__edge {
+  height: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.catalog-card__wear {
+  position: absolute;
+  pointer-events: none;
 }

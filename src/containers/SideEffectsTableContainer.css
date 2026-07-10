@@ -1,0 +1,144 @@
+.side-effects-table-layout {
+  max-width: var(--max-width-grid);
+  margin: 0 auto;
+  padding: 28px 32px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .side-effects-table-layout {
+    padding-bottom: 104px;
+    flex-direction: column;
+  }
+}
+
+.side-effects-table-column {
+  flex: 2;
+  min-width: 420px;
+}
+
+@media (max-width: 640px) {
+  .side-effects-table-column {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.side-effects-side-column {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Positioned ancestor for TurnReviewOverlay — same pattern as the other two
+   table containers. */
+.side-effects-table-top {
+  position: relative;
+}
+
+.side-effects-turn-indicator {
+  border: 1.5px dashed var(--color-terracotta);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-terracotta);
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.side-effects-psyche-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.side-effects-hand-panel {
+  border: 3px solid var(--color-terracotta);
+  background: #fdf0e5;
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.side-effects-hand-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #2e2013;
+  margin-bottom: 12px;
+}
+
+.side-effects-hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.side-effects-message-text {
+  font-size: 13px;
+  margin-top: 10px;
+  color: var(--color-avocado);
+  text-align: center;
+}
+
+.side-effects-message-text--error {
+  color: var(--color-terracotta);
+}
+
+.side-effects-table-panel {
+  border: 3px solid var(--color-terracotta);
+  background: #fdf0e5;
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+}
+
+.side-effects-table-panel__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: #2e2013;
+  margin-bottom: 14px;
+}
+
+.side-effects-modal-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: #2e2013;
+  margin-bottom: 10px;
+}
+
+.side-effects-modal-desc {
+  font-size: 14px;
+  color: rgba(46, 32, 19, 0.7);
+  margin-bottom: 14px;
+}
+
+.side-effects-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.side-effects-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.side-effects-discard-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
