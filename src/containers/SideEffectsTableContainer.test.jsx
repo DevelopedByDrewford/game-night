@@ -75,7 +75,7 @@ describe('SideEffectsTableContainer', () => {
     expect(screen.getByText(/your turn/i)).toBeInTheDocument();
   });
 
-  it('shows the treated badge for an opponent\'s covered disorder', () => {
+  it('shows the full Drug card covering an opponent\'s treated disorder', () => {
     renderTable();
     expect(screen.getByText(/madness treatment/i)).toBeInTheDocument();
   });

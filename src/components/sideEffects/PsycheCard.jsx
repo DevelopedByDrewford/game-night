@@ -3,11 +3,15 @@ import { cardName } from '../../utils/sideEffectsCards.js';
 import { frontImageFor } from '../../utils/sideEffectsCardArt.js';
 import './PsycheCard.css';
 
-// One Psyche entry — a face-up Disorder, optionally covered by a Drug (a
-// small badge, not a full card, since the Disorder itself must stay
-// readable underneath) and optionally an askew Episode overlay while a
-// persistent punishment (Anorexia/Depression/Impotence) is still being
-// enforced. 2.7:4.52 real-card aspect ratio per the design spec.
+// One Psyche entry — a face-up Disorder, covered by a full Drug card
+// (offset slightly so a sliver of the Disorder peeks out behind it, like a
+// card physically placed on top) once treated — the Drug needs to be fully
+// readable, since which specific treatment is covering a Disorder matters
+// for gameplay (side-effect exposure, High Tolerance targeting, etc.), not
+// just legible as a small badge. Optionally an askew Episode overlay while
+// a persistent punishment (Anorexia/Depression/Impotence) is still being
+// enforced — mutually exclusive with a Drug, since Episode can only target
+// an untreated Disorder. 2.7:4.52 real-card aspect ratio per the design spec.
 //
 // Sized off --se-card-width/--se-card-height (set on .side-effects-table-layout
 // in SideEffectsTableContainer.css) by default, so desktop can run larger
@@ -33,13 +37,20 @@ export function PsycheCard({ entry, width = DEFAULT_WIDTH, height = DEFAULT_HEIG
         width={width}
         height={height}
         radius={10}
-        stripe={treated ? '#7C8C4A' : '#C8592F'}
+        stripe="#C8592F"
         label={cardName(entry.disorderId)}
         frontImageUrl={frontImageFor(entry.disorderId)}
       />
       {treated && (
-        <div className="psyche-card__drug-badge" title={cardName(entry.drugId)}>
-          💊 {cardName(entry.drugId)}
+        <div className="psyche-card__drug-overlay" title={`Treated with ${cardName(entry.drugId)}`}>
+          <PlayingCard
+            width={width}
+            height={height}
+            radius={10}
+            stripe="#7C8C4A"
+            label={cardName(entry.drugId)}
+            frontImageUrl={frontImageFor(entry.drugId)}
+          />
         </div>
       )}
       {entry.episodeActive && (
