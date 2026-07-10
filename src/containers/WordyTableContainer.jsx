@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoomChromeHeader } from '../components/layout/RoomChromeHeader.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
+import { FullRulesButton } from '../components/game/FullRulesButton.jsx';
+import { WordyRules } from '../components/game/WordyRules.jsx';
 import { TurnReviewOverlay } from '../components/game/TurnReviewOverlay.jsx';
 import { LetterTile } from '../components/wordy/LetterTile.jsx';
 import { WordBuilder } from '../components/wordy/WordBuilder.jsx';
@@ -25,6 +27,7 @@ import {
 } from '../utils/wordyGameplay.js';
 import { colorForId } from '../utils/colors.js';
 import { CLUE_DEFS, CLUE_ORDER, clueDescription } from '../utils/wordyClues.js';
+import { roomLabel } from '../utils/roomLabel.js';
 import './WordyTableContainer.css';
 
 // Clues that need extra input before they can be activated — everything
@@ -92,7 +95,7 @@ export function WordyTableContainer({ room }) {
   if (stateLoading || hand.loading || !state) {
     return (
       <>
-        <RoomChromeHeader title={`Room ${room.code}`} />
+        <RoomChromeHeader title={roomLabel(room)} />
         <div className="table-status-text">Loading table…</div>
       </>
     );
@@ -205,7 +208,7 @@ export function WordyTableContainer({ room }) {
 
   return (
     <>
-      <RoomChromeHeader title={`Room ${room.code}`} showEndGameEarly={isHost} onEndGameEarly={handleEndGameEarly} />
+      <RoomChromeHeader title={roomLabel(room)} showEndGameEarly={isHost} onEndGameEarly={handleEndGameEarly} />
       <div className="wordy-table-layout">
         <div className="wordy-table-column">
           <div className="wordy-table-top">
@@ -358,7 +361,12 @@ export function WordyTableContainer({ room }) {
           )}
         </div>
 
-        <ActionLogPanel entries={entries} />
+        <div className="wordy-table-side-column">
+          <ActionLogPanel entries={entries} />
+          <FullRulesButton title="A Little Wordy — Rules">
+            <WordyRules />
+          </FullRulesButton>
+        </div>
       </div>
 
       {pendingClueId && (

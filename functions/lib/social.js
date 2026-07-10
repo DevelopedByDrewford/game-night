@@ -1,5 +1,5 @@
 import { HttpsError } from 'firebase-functions/v2/https';
-import { sendPushToUid, SITE_ORIGIN, GAME_DISPLAY_NAMES } from './push.js';
+import { sendPushToUid, SITE_ORIGIN, GAME_DISPLAY_NAMES, roomLabel } from './push.js';
 
 function playerName(room, uid) {
   return (room.players || []).find((p) => p.uid === uid)?.displayName || 'A player';
@@ -66,6 +66,7 @@ export function createSocialHandlers({ db, FieldValue, messaging }) {
             gameType: after.gameType,
             roomId,
             roomCode: after.code,
+            roomName: after.name || null,
             createdAt: FieldValue.serverTimestamp(),
           });
           await sendPushToUid({
@@ -73,7 +74,7 @@ export function createSocialHandlers({ db, FieldValue, messaging }) {
             FieldValue,
             messaging,
             uid: after.hostUid,
-            notification: { title: 'New player!', body: `${joinerName} joined your ${gameName} room (${after.code}).` },
+            notification: { title: 'New player!', body: `${joinerName} joined your ${gameName} room (${roomLabel(after)}).` },
             link: `${SITE_ORIGIN}/rooms/${roomId}`,
           });
         })
@@ -116,6 +117,7 @@ export function createSocialHandlers({ db, FieldValue, messaging }) {
       type: 'invite',
       roomId,
       roomCode: room.code,
+      roomName: room.name || null,
       gameType: room.gameType,
       inviterUid: uid,
       inviterName,
@@ -127,7 +129,7 @@ export function createSocialHandlers({ db, FieldValue, messaging }) {
       FieldValue,
       messaging,
       uid: targetUid,
-      notification: { title: 'Game invite!', body: `${inviterName} invited you to ${gameName} — Room ${room.code}.` },
+      notification: { title: 'Game invite!', body: `${inviterName} invited you to ${gameName} — ${roomLabel(room)}.` },
       link: `${SITE_ORIGIN}/rooms/${roomId}`,
     });
 

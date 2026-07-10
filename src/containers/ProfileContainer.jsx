@@ -10,7 +10,22 @@ import { useFollowing } from '../hooks/useFollowing.js';
 import { updateProfile } from '../utils/profile.js';
 import { followUser } from '../utils/follows.js';
 import { colorForId } from '../utils/colors.js';
+import { catalogArtFor } from '../utils/catalogArt.js';
 import './ProfileContainer.css';
+
+function StatThumb({ gameId, active }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = catalogArtFor(gameId);
+  const showImage = Boolean(imageUrl) && !imageFailed;
+
+  return (
+    <div className={`profile-stat-thumb${active ? ' profile-stat-thumb--live' : ''}`}>
+      {showImage && (
+        <img className="profile-stat-thumb__image" src={imageUrl} alt="" onError={() => setImageFailed(true)} />
+      )}
+    </div>
+  );
+}
 
 function formatJoinDate(timestamp) {
   if (!timestamp?.toDate) return 'recently';
@@ -283,7 +298,7 @@ export function ProfileContainer() {
 
           return (
             <div className={`profile-stat-row${game.active ? ' profile-stat-row--live' : ''}`} key={game.id}>
-              <div className={`profile-stat-thumb${game.active ? ' profile-stat-thumb--live' : ''}`} />
+              <StatThumb gameId={game.id} active={game.active} />
               <div>
                 <div className="profile-stat-name">{game.displayName || game.id}</div>
                 {game.active ? (

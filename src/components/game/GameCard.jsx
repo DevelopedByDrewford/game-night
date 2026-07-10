@@ -28,7 +28,7 @@ export function GameCard({ to, name, subtitle = 'Love Letter', playerColors, sta
             <img className="game-card__thumb-image" src={imageUrl} alt="" onError={() => setImageFailed(true)} />
           )}
         </div>
-        <div>
+        <div className="game-card__info">
           <div className="game-card__name">{name}</div>
           <div className="game-card__subtitle">{subtitle}</div>
         </div>

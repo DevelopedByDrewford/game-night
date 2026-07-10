@@ -9,6 +9,15 @@ export const SITE_ORIGIN = 'https://game-night.drewford.dev';
 // notification/activity text that needs a display name.
 export const GAME_DISPLAY_NAMES = { 'love-letter': 'Love Letter', 'a-little-wordy': 'A Little Wordy' };
 
+// Room names are optional and don't need to be unique — the invite code is
+// what actually identifies/joins a room. Every push/activity surface that
+// used to hardcode "Room {code}" should go through this so a named room
+// shows its name instead, everywhere at once.
+export function roomLabel(room) {
+  const name = room?.name?.trim();
+  return name ? name : `Room ${room?.code || ''}`;
+}
+
 // Shared "send a push notification to every device a user has registered"
 // helper (users/{uid}.pushTokens) — used by turn notifications and the
 // new-follower notification. Always call this AFTER whatever write
@@ -55,6 +64,7 @@ export async function notifyGameStarted({ db, FieldValue, messaging, room, roomI
         gameType: room.gameType,
         roomId,
         roomCode: room.code,
+        roomName: room.name || null,
         createdAt: FieldValue.serverTimestamp(),
       });
       if (participantUid === notifyUid) return;
@@ -63,7 +73,7 @@ export async function notifyGameStarted({ db, FieldValue, messaging, room, roomI
         FieldValue,
         messaging,
         uid: participantUid,
-        notification: { title: 'Game starting!', body: `${gameName} in Room ${room.code} is starting now.` },
+        notification: { title: 'Game starting!', body: `${gameName} in ${roomLabel(room)} is starting now.` },
         link: `${SITE_ORIGIN}/rooms/${roomId}`,
       });
     })

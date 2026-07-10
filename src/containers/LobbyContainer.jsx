@@ -12,6 +12,7 @@ import { useFollowing } from '../hooks/useFollowing.js';
 import { leaveRoom, startGame, joinRoomById, inviteToRoom } from '../utils/rooms.js';
 import { dealTiles } from '../utils/wordyGameplay.js';
 import { colorForId } from '../utils/colors.js';
+import { roomLabel } from '../utils/roomLabel.js';
 import './LobbyContainer.css';
 
 export function LobbyContainer({ room }) {
@@ -117,7 +118,7 @@ export function LobbyContainer({ room }) {
       <RoomChromeHeader title="Waiting Room" />
       <PageWrap $maxWidth="640px" $padding="44px 32px">
         <div className="lobby-title-row">
-          <div className="lobby-title">Waiting Room</div>
+          <div className="lobby-title">{roomLabel(room)}</div>
           <div className="lobby-code-row">
             <div className="lobby-code">{room.code}</div>
             {isMember && !roomFull && (

@@ -30,6 +30,17 @@
   color: #2e2013;
 }
 
+.create-room-text-input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(46, 32, 19, 0.16);
+  background: var(--color-page-bg);
+  color: var(--color-ink);
+}
+
 .create-room-stepper-row {
   display: flex;
   align-items: center;

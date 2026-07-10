@@ -16,6 +16,7 @@ import { followUser } from '../utils/follows.js';
 import { dismissActivity } from '../utils/activity.js';
 import { colorForId } from '../utils/colors.js';
 import { catalogArtFor } from '../utils/catalogArt.js';
+import { roomLabel } from '../utils/roomLabel.js';
 import './DashboardContainer.css';
 
 const STATUS_LABELS = {
@@ -172,7 +173,7 @@ export function DashboardContainer() {
               <GameCard
                 key={room.id}
                 to={`/rooms/${room.id}`}
-                name={`Room ${room.code}`}
+                name={roomLabel(room)}
                 playerColors={(room.players || []).map((p) => colorForId(p.uid))}
                 status={status.label}
                 statusFilled={status.filled}

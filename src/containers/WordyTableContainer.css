@@ -11,7 +11,7 @@
 
 @media (max-width: 640px) {
   .wordy-table-layout {
-    padding-bottom: 90px;
+    padding-bottom: 104px;
     flex-direction: column;
   }
 }
@@ -26,6 +26,14 @@
     min-width: 0;
     width: 100%;
   }
+}
+
+.wordy-table-side-column {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* Positioned ancestor for TurnReviewOverlay — same pattern as

@@ -1,7 +1,7 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { buildDeck, bracketForPlayerCount, isValidRulesetForPlayerCount, TOKENS_TO_WIN } from './deck.js';
 import { shuffle } from './shuffle.js';
-import { sendPushToUid, notifyGameStarted, SITE_ORIGIN, GAME_DISPLAY_NAMES } from './push.js';
+import { sendPushToUid, notifyGameStarted, SITE_ORIGIN, GAME_DISPLAY_NAMES, roomLabel } from './push.js';
 import {
   dealSetup,
   isLegalPlay,
@@ -84,7 +84,7 @@ export function createHandlers({ db, FieldValue, messaging }) {
       uid,
       notification: {
         title: "It's your turn!",
-        body: `It's your move in ${gameName} — Room ${room.code}.`,
+        body: `It's your move in ${gameName} — ${roomLabel(room)}.`,
       },
       link: `${SITE_ORIGIN}/rooms/${roomId}`,
     });
@@ -103,6 +103,7 @@ export function createHandlers({ db, FieldValue, messaging }) {
         gameType: room.gameType,
         roomId,
         roomCode: room.code,
+        roomName: room.name || null,
         createdAt: FieldValue.serverTimestamp(),
       });
     }

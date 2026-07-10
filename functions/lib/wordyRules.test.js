@@ -77,10 +77,12 @@ describe('resolveClue', () => {
 
   it('relative-word-length compares lengths for a legal built word', () => {
     // caller's tilesInFront (post-swap) is A/E/I/O + C/B/D/F/G/H/J — "cage"
-    // is spellable and a real word, 4 letters vs opponent's "CAB" (3)
+    // is spellable and a real word, 4 letters vs opponent's "CAB" (3) — the
+    // opponent's word (CAB) is the shorter one, so the message must say
+    // "shorter", describing the opponent's word relative to what was built.
     const result = resolveClue('relative-word-length', makeCtx({ args: { builtWord: 'cage' } }));
     expect(result.tokensAwarded).toBe(1);
-    expect(result.logMessage).toContain('longer');
+    expect(result.logMessage).toContain('shorter');
   });
 
   it('letter-strike rejects a letter not in the caller\'s tile set', () => {

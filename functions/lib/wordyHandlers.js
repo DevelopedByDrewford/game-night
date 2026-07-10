@@ -4,7 +4,7 @@ import { dealTiles as drawTiles } from './wordyDeck.js';
 import { selectCluePool } from './wordyClues.js';
 import { isValidWord } from './dictionary.js';
 import { isSpellable, resolveClue, checkAndMaybeCompleteGame } from './wordyRules.js';
-import { sendPushToUid, notifyGameStarted, SITE_ORIGIN, GAME_DISPLAY_NAMES } from './push.js';
+import { sendPushToUid, notifyGameStarted, SITE_ORIGIN, GAME_DISPLAY_NAMES, roomLabel } from './push.js';
 
 const MAX_SECRET_WORD_LENGTH = 11;
 const TIEBREAKER_WORD_LENGTH = 4;
@@ -72,6 +72,7 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
         gameType: 'a-little-wordy',
         roomId,
         roomCode: room.code,
+        roomName: room.name || null,
         createdAt: FieldValue.serverTimestamp(),
       });
     }
@@ -211,7 +212,7 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
         FieldValue,
         messaging,
         uid: notifyUid,
-        notification: { title: "It's your turn!", body: `It's your move in ${gameName} — Room ${room.code}.` },
+        notification: { title: "It's your turn!", body: `It's your move in ${gameName} — ${roomLabel(room)}.` },
         link: `${SITE_ORIGIN}/rooms/${roomId}`,
       });
     }
@@ -336,7 +337,7 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
         FieldValue,
         messaging,
         uid: notifyUid,
-        notification: { title: "It's your turn!", body: `It's your move in ${gameName} — Room ${room.code}.` },
+        notification: { title: "It's your turn!", body: `It's your move in ${gameName} — ${roomLabel(room)}.` },
         link: `${SITE_ORIGIN}/rooms/${roomId}`,
       });
     }
@@ -476,7 +477,7 @@ export function createWordyHandlers({ db, FieldValue, messaging }) {
         FieldValue,
         messaging,
         uid: notifyUid,
-        notification: { title: "It's your turn!", body: `It's your move in ${gameName} — Room ${room.code}.` },
+        notification: { title: "It's your turn!", body: `It's your move in ${gameName} — ${roomLabel(room)}.` },
         link: `${SITE_ORIGIN}/rooms/${roomId}`,
       });
     }

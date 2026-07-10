@@ -108,7 +108,7 @@ const RESOLVERS = {
   'relative-word-length': (ctx) => {
     const built = requireBuiltWord(ctx);
     const opponentLen = ctx.opponentHand.secretWord.length;
-    const comparison = built.length > opponentLen ? 'longer' : built.length < opponentLen ? 'shorter' : 'the same length';
+    const comparison = opponentLen > built.length ? 'longer' : opponentLen < built.length ? 'shorter' : 'the same length';
     return {
       tokensAwarded: 1,
       logMessage: `${ctx.callerName} activated Relative Word Length with "${built}" — ${ctx.opponentName}'s word is ${comparison}.`,

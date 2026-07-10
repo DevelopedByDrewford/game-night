@@ -59,10 +59,18 @@
   display: block;
 }
 
+.game-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
 .game-card__name {
   font-weight: 700;
   font-size: 16px;
   color: #2e2013;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-card__subtitle {

@@ -8,6 +8,8 @@ import { DiscardsModal } from '../components/game/DiscardsModal.jsx';
 import { TurnReviewOverlay } from '../components/game/TurnReviewOverlay.jsx';
 import { ActionLogPanel } from '../components/game/ActionLogPanel.jsx';
 import { RulesReferencePanel } from '../components/game/RulesReferencePanel.jsx';
+import { FullRulesButton } from '../components/game/FullRulesButton.jsx';
+import { LoveLetterRules } from '../components/game/LoveLetterRules.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -20,6 +22,7 @@ import { playCard, resolveChancellor } from '../utils/gameplay.js';
 import { colorForId } from '../utils/colors.js';
 import { CARD_DEFS, TARGETED_CARDS, cardName, cardDescription } from '../utils/cards.js';
 import { frontImageFor, backImageFor } from '../utils/cardArt.js';
+import { roomLabel } from '../utils/roomLabel.js';
 import './ActiveTableContainer.css';
 
 export function ActiveTableContainer({ room }) {
@@ -65,7 +68,7 @@ export function ActiveTableContainer({ room }) {
   if (stateLoading || handLoading || !state) {
     return (
       <>
-        <RoomChromeHeader title={`Room ${room.code}`} />
+        <RoomChromeHeader title={roomLabel(room)} />
         <div className="table-status-text">Loading table…</div>
       </>
     );
@@ -231,7 +234,7 @@ export function ActiveTableContainer({ room }) {
   return (
     <>
       <RoomChromeHeader
-        title={`Room ${room.code}`}
+        title={roomLabel(room)}
         showEndGameEarly={isHost}
         onEndGameEarly={handleEndGameEarly}
       />
@@ -312,7 +315,12 @@ export function ActiveTableContainer({ room }) {
           </div>
         </div>
 
-        <ActionLogPanel entries={entries} />
+        <div className="table-side-column">
+          <ActionLogPanel entries={entries} />
+          <FullRulesButton title="Love Letter — Rules" stacked>
+            <LoveLetterRules />
+          </FullRulesButton>
+        </div>
         <RulesReferencePanel ruleset={state.ruleset} />
       </div>
 

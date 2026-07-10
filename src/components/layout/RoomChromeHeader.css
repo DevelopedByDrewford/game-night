@@ -28,6 +28,11 @@
   font-family: var(--font-display);
   font-size: 20px;
   color: #2e2013;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-chrome-end-game {

@@ -11,7 +11,7 @@
 
 @media (max-width: 640px) {
   .table-layout {
-    padding-bottom: 90px;
+    padding-bottom: 104px;
     /* TableColumn's 420px min-width otherwise still competes for space on
        the same flex line as the Action Log/Rules panels (removing just the
        min-width isn't enough — flex-basis from the flex:2 shorthand wins
@@ -31,6 +31,14 @@
     min-width: 0;
     width: 100%;
   }
+}
+
+.table-side-column {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* Positioned ancestor for TurnReviewOverlay — on desktop the overlay covers

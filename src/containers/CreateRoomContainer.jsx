@@ -25,6 +25,7 @@ export function CreateRoomContainer() {
   const { gameType = 'love-letter' } = useParams();
   const isWordy = gameType === 'a-little-wordy';
   const [playerCount, setPlayerCount] = useState(isWordy ? 2 : 4);
+  const [roomName, setRoomName] = useState('');
   const [ruleset, setRuleset] = useState('classic');
   const [autoSkip, setAutoSkip] = useState(false);
   const [room, setRoom] = useState(null);
@@ -93,6 +94,7 @@ export function CreateRoomContainer() {
     setError(null);
     try {
       await updateDoc(doc(db, 'gameRooms', room.roomId), {
+        name: roomName.trim() || null,
         settings: { playerCount, ruleset, autoSkipEnabled: autoSkip, autoSkipMinutes: 10 },
         updatedAt: serverTimestamp(),
       });
@@ -114,6 +116,20 @@ export function CreateRoomContainer() {
         </div>
 
         <div className="create-room-card">
+          <div>
+            <div className="create-room-section-label">Room name (optional)</div>
+            <input
+              className="create-room-text-input"
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+              placeholder={room?.code ? `Room ${room.code}` : 'e.g. Friday Night'}
+              maxLength={40}
+            />
+            <div className="create-room-stepper-hint" style={{ marginTop: 6 }}>
+              Doesn't need to be unique — your invite code still works normally either way.
+            </div>
+          </div>
+
           <div>
             <div className="create-room-section-label">Player count</div>
             {isWordy ? (

@@ -1,7 +1,9 @@
 .lobby-title-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
+  gap: 10px;
   margin-bottom: 6px;
 }
 
@@ -10,6 +12,8 @@
   font-size: 36px;
   letter-spacing: -1px;
   text-shadow: 0 2px 14px rgba(227, 167, 62, 0.2);
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .lobby-code {

@@ -3,13 +3,13 @@ import { Avatar } from '../ui/Avatar.jsx';
 import { Button } from '../ui/Button.jsx';
 import { colorForId } from '../../utils/colors.js';
 import { formatAbsoluteTime } from '../../utils/time.js';
+import { roomLabel } from '../../utils/roomLabel.js';
 import './ActivityFeed.css';
 
 function describeGameResult(entry, gameNames) {
   const gameName = gameNames[entry.gameType] || 'a game';
-  return entry.type === 'game_won'
-    ? `You won ${gameName} in Room ${entry.roomCode}! 🎉`
-    : `You lost ${gameName} in Room ${entry.roomCode}.`;
+  const label = roomLabel({ name: entry.roomName, code: entry.roomCode });
+  return entry.type === 'game_won' ? `You won ${gameName} in ${label}! 🎉` : `You lost ${gameName} in ${label}.`;
 }
 
 export function ActivityFeed({
@@ -69,7 +69,7 @@ export function ActivityFeed({
                   <Link className="activity-feed__link" to={`/profile/${entry.inviterUid}`}>
                     {entry.inviterName}
                   </Link>{' '}
-                  invited you to {gameName} — Room {entry.roomCode}.
+                  invited you to {gameName} — {roomLabel({ name: entry.roomName, code: entry.roomCode })}.
                   <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
                 </div>
                 {alreadyJoined ? (
@@ -101,7 +101,7 @@ export function ActivityFeed({
                   </Link>{' '}
                   joined your {gameName} room —{' '}
                   <Link className="activity-feed__link" to={`/rooms/${entry.roomId}`}>
-                    Room {entry.roomCode}
+                    {roomLabel({ name: entry.roomName, code: entry.roomCode })}
                   </Link>
                   .
                   <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>
@@ -118,7 +118,7 @@ export function ActivityFeed({
                 <div className="activity-feed__info">
                   {gameName} is starting —{' '}
                   <Link className="activity-feed__link" to={`/rooms/${entry.roomId}`}>
-                    Room {entry.roomCode}
+                    {roomLabel({ name: entry.roomName, code: entry.roomCode })}
                   </Link>
                   .
                   <div className="activity-feed__time">{formatAbsoluteTime(entry.createdAt)}</div>

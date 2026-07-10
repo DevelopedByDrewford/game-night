@@ -1,10 +1,11 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useRoom } from '../hooks/useRoom.js';
 import { useRoomPresence } from '../hooks/useRoomPresence.js';
 import { LobbyContainer } from './LobbyContainer.jsx';
 import { ActiveTableContainer } from './ActiveTableContainer.jsx';
 import { WordyTableContainer } from './WordyTableContainer.jsx';
 import { PageWrap } from '../components/layout/PageWrap.jsx';
+import { Button } from '../components/ui/Button.jsx';
 import './RoomContainer.css';
 
 // Single dynamic route (/rooms/:roomId) that branches on the room's own
@@ -27,6 +28,9 @@ export function RoomContainer() {
     return (
       <PageWrap $maxWidth="640px">
         <div className="room-status-text">This room doesn't exist or you don't have access to it.</div>
+        <Link to="/dashboard">
+          <Button $fullWidth>Return to Dashboard</Button>
+        </Link>
       </PageWrap>
     );
   }
@@ -39,6 +43,9 @@ export function RoomContainer() {
   return (
     <PageWrap $maxWidth="640px">
       <div className="room-status-text">This game has ended.</div>
+      <Link to="/dashboard">
+        <Button $fullWidth>Return to Dashboard</Button>
+      </Link>
     </PageWrap>
   );
 }

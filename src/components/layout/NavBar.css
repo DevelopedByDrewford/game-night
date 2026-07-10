@@ -48,7 +48,7 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 10px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 0 calc(26px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid rgba(245, 230, 199, 0.1);
     background: #2e2013;
     position: fixed;
