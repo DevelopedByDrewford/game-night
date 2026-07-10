@@ -205,6 +205,37 @@ describe('SideEffectsTableContainer', () => {
     expect(screen.getByText(/treats anxiety\./i)).toBeInTheDocument();
   });
 
+  it('carousel: on desktop with too many cards to fit in one row, pages through multiple at once (not the mobile 1-card slider)', async () => {
+    window.innerWidth = 1200;
+    fakeState.psyches.me = [
+      { disorderId: 'anxiety', drugId: null, episodeActive: null },
+      { disorderId: 'anorexia', drugId: null, episodeActive: null },
+      { disorderId: 'depression', drugId: null, episodeActive: null },
+      { disorderId: 'gamblingAddiction', drugId: null, episodeActive: null },
+      { disorderId: 'impotence', drugId: null, episodeActive: null },
+      { disorderId: 'madness', drugId: null, episodeActive: null },
+      { disorderId: 'suicidalThoughts', drugId: null, episodeActive: null },
+      { disorderId: 'tremors', drugId: null, episodeActive: null },
+    ];
+    renderTable();
+
+    await userEvent.click(screen.getAllByText('Anxiety')[0]);
+    // Desktop paging, not the mobile single-card slider's controls.
+    expect(screen.getByRole('button', { name: 'Previous cards' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next cards' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Previous card' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next card' })).not.toBeInTheDocument();
+    // More than one card shown at once (not just 1 like mobile) — 2 of each
+    // since the background Psyche board (showing all 8) is still mounted
+    // behind the modal.
+    expect(screen.getAllByText('Anorexia')).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next cards' }));
+    // Paging moved forward — a later disorder should now be visible in the
+    // modal too (1 in the background board + 1 newly shown in the modal).
+    expect(screen.getAllByText('Tremors')).toHaveLength(2);
+  });
+
   it('carousel: clicking a Psyche card opens a view-only carousel (no Play button)', async () => {
     renderTable();
 

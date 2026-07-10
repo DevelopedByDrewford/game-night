@@ -5,6 +5,10 @@
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 0;
+  /* Belt-and-suspenders alongside PlayingCard.jsx only painting the striped
+     placeholder when there's no image: clips anything (image, background)
+     that rounds a hair outside the border-radius corners at odd sizes. */
+  overflow: hidden;
 }
 
 .playing-card--has-label {

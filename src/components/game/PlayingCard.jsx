@@ -25,7 +25,13 @@ export function PlayingCard({
     width,
     height,
     borderRadius: radius,
-    background: `repeating-linear-gradient(45deg, ${stripe}33, ${stripe}33 ${stripeSize}px, var(--color-surface) ${stripeSize}px, var(--color-surface) ${stripeSize * 2}px)`,
+    // Only paint the striped placeholder when there's no image — painting
+    // it unconditionally left a sliver of stripe visible around real card
+    // art wherever sub-pixel rounding left the smaller (border-box-relative)
+    // image not quite covering the div's full background.
+    ...(!imageUrl && {
+      background: `repeating-linear-gradient(45deg, ${stripe}33, ${stripe}33 ${stripeSize}px, var(--color-surface) ${stripeSize}px, var(--color-surface) ${stripeSize * 2}px)`,
+    }),
     ...style,
   };
 

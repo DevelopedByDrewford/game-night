@@ -518,6 +518,7 @@ export function SideEffectsTableContainer({ room }) {
         <CardCarouselModal
           items={carousel.kind === 'hand' ? hand : state.psyches[carousel.uid] || []}
           startIndex={carousel.startIndex}
+          cardWidth={CAROUSEL_CARD_WIDTH}
           onClose={closeCarousel}
           title={carousel.kind === 'hand' ? 'Your Hand' : `${nameForUid(carousel.uid)}'s Psyche`}
           renderCard={(item) =>
