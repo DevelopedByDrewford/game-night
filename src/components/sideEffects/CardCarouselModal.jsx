@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react';
 import './CardCarouselModal.css';
 
 // Layout constants — kept in sync with the modal's own CSS (.card-carousel__grid's
-// gap, .card-carousel's padding) so the "how many cards fit" math is measuring
-// the same box the browser will actually lay out.
+// gap, .card-carousel's padding, .card-carousel__description's max-width) so
+// the "how many cards fit" math is measuring the same box the browser will
+// actually lay out.
 const GRID_GAP = 32;
 const GRID_SIDE_PADDING = 48; // .card-carousel's 24px padding, both sides
 const NAV_BUTTON_RESERVE = 120; // conservative space for the prev/next page-nav buttons when paging
+// A grid-item's actual footprint is whichever is wider, the card itself or
+// its description block underneath (description text is often wider than a
+// narrow card) — .card-carousel__grid-item centers its children, so the
+// widest one determines the column's real width.
+const DESCRIPTION_MAX_WIDTH = 260;
 
 // Below this width we're in the app's usual mobile layout — same breakpoint
 // used everywhere else (PageWrap, NavBar, table layouts). Above it, this is
@@ -31,9 +37,9 @@ function useViewportWidth() {
 // How many cards fit side by side in one row at this viewport width —
 // reserves room for the page-nav arrows up front so the count doesn't
 // change depending on whether paging ends up being needed.
-function computeItemsPerPage(viewportWidth, cardWidth) {
+function computeItemsPerPage(viewportWidth, itemWidth) {
   const available = viewportWidth - GRID_SIDE_PADDING - NAV_BUTTON_RESERVE;
-  const perPage = Math.floor((available + GRID_GAP) / (cardWidth + GRID_GAP));
+  const perPage = Math.floor((available + GRID_GAP) / (itemWidth + GRID_GAP));
   return Math.max(1, perPage);
 }
 
@@ -60,7 +66,10 @@ export function CardCarouselModal({ items, startIndex = 0, onClose, renderCard, 
   const viewportWidth = useViewportWidth();
 
   const isMobile = viewportWidth < MOBILE_BREAKPOINT;
-  const itemsPerPage = isMobile ? 1 : Math.min(items.length, computeItemsPerPage(viewportWidth, cardWidth));
+  // Only reserve room for the wider description column when one is
+  // actually being rendered.
+  const itemWidth = renderDescription ? Math.max(cardWidth, DESCRIPTION_MAX_WIDTH) : cardWidth;
+  const itemsPerPage = isMobile ? 1 : Math.min(items.length, computeItemsPerPage(viewportWidth, itemWidth));
 
   const [index, setIndex] = useState(() => {
     const clampedStart = Math.min(startIndex, Math.max(0, items.length - 1));

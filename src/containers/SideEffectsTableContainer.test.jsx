@@ -229,11 +229,13 @@ describe('SideEffectsTableContainer', () => {
     // since the background Psyche board (showing all 8) is still mounted
     // behind the modal.
     expect(screen.getAllByText('Anorexia')).toHaveLength(2);
+    const progressBefore = screen.getByText(/^1 \//).textContent;
 
     await userEvent.click(screen.getByRole('button', { name: 'Next cards' }));
-    // Paging moved forward — a later disorder should now be visible in the
-    // modal too (1 in the background board + 1 newly shown in the modal).
-    expect(screen.getAllByText('Tremors')).toHaveLength(2);
+
+    // Paging moved forward to a new page.
+    expect(screen.queryByText(progressBefore)).not.toBeInTheDocument();
+    expect(screen.getByText(/^2 \//)).toBeInTheDocument();
   });
 
   it('carousel: clicking a Psyche card opens a view-only carousel (no Play button)', async () => {
